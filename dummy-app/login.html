@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacific Teller - Login</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="login">
+    <main class="login-page">
+      <section id="loginModal" class="login-panel">
+        <p class="eyebrow">Secure branch access</p>
+        <h1>Pacific Teller</h1>
+        <p class="muted">Branch: <span id="loginCountry">-</span></p>
+        <label for="username">User ID</label>
+        <input id="username" type="text" autocomplete="username" placeholder="Enter user ID" />
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="Enter password" />
+        <button id="loginBtn" class="btn-primary">Sign in</button>
+        <div id="loginError" class="error hidden"></div>
+      </section>
+    </main>
+    <script src="site.js"></script>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacific Teller - Transactions</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="transaction">
+    <header class="topbar">
+      <div class="brand">Pacific Teller</div>
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a id="navCustomer" class="nav-link" href="#">Customers</a>
+        <a id="navTransaction" class="nav-link active" href="#">Transactions</a>
+      </nav>
+      <div class="session">
+        <span id="welcomeUser">Welcome</span>
+        <span class="badge">ENV: <b id="envLabel">-</b></span>
+        <span class="badge">Country: <b id="countryLabel">-</b></span>
+        <button id="logoutBtn" class="btn-ghost">Logout</button>
+      </div>
+    </header>
+    <main class="workspace">
+      <section class="page-heading">
+        <p class="eyebrow">Account servicing</p>
+        <h1>New transaction</h1>
+      </section>
+      <div id="accountSummary" class="summary hidden">
+        <span>Customer: <b id="currentCustomer">-</b></span>
+        <span>Balance: <b id="accountBalance">0.00</b></span>
+      </div>
+      <section class="panel">
+        <label for="txnType">Transaction type</label>
+        <select id="txnType">
+          <option value="deposit">Deposit</option>
+          <option value="withdraw">Withdraw</option>
+        </select>
+        <label for="txnReason">Reason</label>
+        <select id="txnReason"></select>
+        <label for="txnAmount">Amount</label>
+        <input id="txnAmount" type="number" min="0" step="0.01" placeholder="0.00" />
+        <button id="submitTxnBtn" class="btn-primary" disabled>Submit transaction</button>
+        <div id="txnStatus" class="status hidden"></div>
+        <div id="txnReference" class="summary hidden">Transaction ID: <b id="txnId">-</b></div>
+      </section>
+    </main>
+    <script src="site.js"></script>
+  </body>
+</html>

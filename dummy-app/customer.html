@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacific Teller - Customers</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="customer">
+    <header class="topbar">
+      <div class="brand">Pacific Teller</div>
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a id="navCustomer" class="nav-link active" href="#">Customers</a>
+        <a id="navTransaction" class="nav-link" href="#">Transactions</a>
+      </nav>
+      <div class="session">
+        <span id="welcomeUser">Welcome</span>
+        <span class="badge">ENV: <b id="envLabel">-</b></span>
+        <span class="badge">Country: <b id="countryLabel">-</b></span>
+        <button id="logoutBtn" class="btn-ghost">Logout</button>
+      </div>
+    </header>
+    <main class="workspace">
+      <section class="page-heading">
+        <p class="eyebrow">Customer servicing</p>
+        <h1 id="customerPageTitle">Customer lookup</h1>
+      </section>
+      <section id="branchPanel" class="panel branch-panel hidden" aria-labelledby="branchTitle">
+        <div class="branch-heading">
+          <div>
+            <p class="eyebrow">Branch operations</p>
+            <h2 id="branchTitle">Branch status</h2>
+          </div>
+          <span id="branchState" class="branch-state">-</span>
+        </div>
+        <p id="branchSchedule" class="muted"></p>
+        <div class="management-actions">
+          <button id="openBranchBtn" class="btn-primary">Open branch</button>
+          <button id="closeBranchBtn" class="btn-secondary danger">Close branch</button>
+        </div>
+        <div id="branchMessage" class="status hidden" role="status"></div>
+      </section>
+      <section class="panel">
+        <div id="suCustomerFields" class="form-grid hidden">
+          <label for="customerNameInput"
+            >Customer name
+            <input id="customerNameInput" type="text" placeholder="Full name" />
+          </label>
+          <label for="customerTypeInput"
+            >Customer type
+            <select id="customerTypeInput">
+              <option value="Retail">Retail</option>
+              <option value="Business">Business</option>
+            </select>
+          </label>
+          <label for="customerBalanceInput"
+            >Opening balance
+            <input id="customerBalanceInput" type="number" min="0" step="0.01" placeholder="0.00" />
+          </label>
+        </div>
+        <div id="suCustomerActions" class="management-actions hidden">
+          <button id="createCustomerBtn" class="btn-primary">Create customer</button>
+        </div>
+        <label for="customerId">Customer ID <span id="customerIdPurpose" class="hidden">(search or delete)</span></label>
+        <div class="input-row">
+          <input id="customerId" type="text" placeholder="e.g. 1001" />
+          <button id="searchCustomerBtn" class="btn-primary">Search</button>
+        </div>
+        <div id="suDeleteAction" class="management-actions hidden">
+          <button id="deleteCustomerBtn" class="btn-secondary danger">Delete customer</button>
+        </div>
+        <div id="customerStatus" class="status hidden" role="status"></div>
+        <div id="customerName" class="result"></div>
+        <div id="customerError" class="error hidden"></div>
+        <div id="accountSummary" class="summary hidden">
+          <span>Customer: <b id="currentCustomer">-</b></span>
+          <span>Balance: <b id="accountBalance">0.00</b></span>
+        </div>
+        <div id="statementActions" class="statement-actions hidden">
+          <button id="viewStatementBtn" class="btn-secondary">View statement</button>
+          <button id="printToPdfBtn" class="btn-secondary">Print to PDF</button>
+          <button id="downloadPdfBtn" class="btn-secondary">Download PDF</button>
+          <button id="printStatementBtn" class="btn-secondary">Print</button>
+          <button id="printNoCloseBtn" class="btn-secondary">Print no close</button>
+        </div>
+        <button id="searchAllCustomersBtn" class="btn-secondary directory-button">Search all customers</button>
+      </section>
+      <section id="customerDirectory" class="panel directory-panel hidden" aria-labelledby="customerDirectoryTitle">
+        <div class="directory-heading">
+          <h2 id="customerDirectoryTitle">All customers</h2>
+          <span id="customerCount">0 customers</span>
+        </div>
+        <div class="table-scroll">
+          <table class="customer-table">
+            <thead>
+              <tr>
+                <th scope="col">Customer ID</th>
+                <th scope="col">Name</th>
+                <th scope="col">Account type</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody"></tbody>
+          </table>
+        </div>
+        <div id="customerTableEmpty" class="empty-state hidden">No customers found</div>
+        <div class="pagination" aria-label="Customer table pagination">
+          <button id="previousCustomersBtn" class="btn-secondary">Previous</button>
+          <span id="customerPageInfo">Page 1 of 1</span>
+          <button id="nextCustomersBtn" class="btn-secondary">Next</button>
+        </div>
+      </section>
+    </main>
+    <script src="site.js"></script>
+  </body>
+</html>

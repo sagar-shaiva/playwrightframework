@@ -1,0 +1,90 @@
+{
+  "password": "Password1",
+  "userIds": {
+    "SU": "VN_SU_BRTR41",
+    "BM": "VN_BM_BRTR41",
+    "BS": "VN_BS_BRTR41",
+    "BO": "VN_BO_BRTR41",
+    "E": "VN_E_BRTR41",
+    "L": "VN_L_BRTR41",
+    "LM": "VN_LM_BRTR41",
+    "MG": "VN_MG_BRTR41",
+    "T": "VN_T_BRTR41"
+  },
+  "customers": {
+    "valid": {
+      "id": "1001",
+      "name": "John Doe",
+      "balance": 5000
+    },
+    "corporate": {
+      "id": "1003",
+      "name": "Acme Corporation",
+      "balance": 250000
+    },
+    "invalid": {
+      "id": "9999"
+    }
+  },
+  "transactions": {
+    "deposit": {
+      "amount": 500,
+      "expectedBalance": 5500,
+      "reason": "Cash deposit",
+      "reasons": [
+        "Cash deposit",
+        "Cheque deposit",
+        "Salary credit",
+        "Transfer received",
+        "Refund"
+      ],
+      "decimalAmount": 250.75,
+      "databaseType": "Deposit"
+    },
+    "withdraw": {
+      "amount": 200,
+      "expectedBalance": 4800,
+      "reason": "Cash withdrawal",
+      "reasons": [
+        "Cash withdrawal",
+        "Bill payment",
+        "Transfer sent",
+        "Service fee",
+        "Loan repayment"
+      ],
+      "overBalanceIncrement": 0.01,
+      "databaseType": "Withdrawal"
+    },
+    "overdraft": {
+      "amount": 999999
+    },
+    "invalidAmounts": [
+      0,
+      -50
+    ],
+    "unselectedCustomerAmount": 100
+  },
+  "loginNegative": {
+    "wrongPassword": {
+      "password": "WrongPass@000"
+    }
+  },
+  "expectedMessages": {
+    "invalidPassword": "Invalid password",
+    "transactionSuccess": "Transaction is successful",
+    "customerNotFound": "Customer not found",
+    "customerRequired": "Please search and select a customer first",
+    "invalidAmount": "Enter a valid amount greater than 0",
+    "insufficientFunds": "Insufficient funds for this withdrawal",
+    "tellerRequired": "Only Teller users can post transactions"
+  },
+  "generatedCustomerFlow": {
+    "name": "Playwright Customer",
+    "type": "Retail",
+    "openingBalance": 0,
+    "depositAmount": 1000,
+    "depositReason": "Salary credit",
+    "withdrawalAmount": 250,
+    "withdrawalReason": "Cash withdrawal"
+  }
+}

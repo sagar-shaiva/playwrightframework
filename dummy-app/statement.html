@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacific Teller - Account Statement</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="statement">
+    <header class="topbar">
+      <div class="brand">Pacific Teller</div>
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a id="navCustomer" class="nav-link" href="#">Customers</a>
+        <a id="navTransaction" class="nav-link" href="#">Transactions</a>
+      </nav>
+      <div class="session">
+        <span id="welcomeUser">Welcome</span>
+        <span class="badge">ENV: <b id="envLabel">-</b></span>
+        <span class="badge">Country: <b id="countryLabel">-</b></span>
+        <button id="logoutBtn" class="btn-ghost">Logout</button>
+      </div>
+    </header>
+    <main class="workspace">
+      <section class="page-heading">
+        <p class="eyebrow">Account servicing</p>
+        <h1>Account statement</h1>
+      </section>
+      <section class="panel statement-sheet">
+        <div class="summary">
+          <span>Customer ID: <b id="statementCustomerId">-</b></span>
+          <span>Customer: <b id="statementCustomerName">-</b></span>
+          <span>Balance: <b id="statementBalance">0.00</b></span>
+        </div>
+        <table class="statement-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>28-10-2026</td>
+              <td>Deposit</td>
+              <td>500.00</td>
+            </tr>
+            <tr>
+              <td>27-10-2026</td>
+              <td>Withdrawal</td>
+              <td>200.00</td>
+            </tr>
+            <tr>
+              <td>26-10-2026</td>
+              <td>Opening balance</td>
+              <td>4700.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+    <script src="site.js"></script>
+  </body>
+</html>
