@@ -27,28 +27,28 @@ export class CustomerPage {
   readonly printNoCloseButton: Locator;
 
   constructor(private readonly page: Page) {
-    this.welcomeUser = page.locator("#welcomeUser");
-    this.envLabel = page.locator("#envLabel");
-    this.countryLabel = page.locator("#countryLabel");
-    this.logoutButton = page.locator("#logoutBtn");
-    this.transactionLink = page.locator("#navTransaction");
-    this.customerId = page.locator("#customerId");
-    this.searchButton = page.locator("#searchCustomerBtn");
-    this.customerNameInput = page.locator("#customerNameInput");
-    this.customerTypeInput = page.locator("#customerTypeInput");
-    this.openingBalanceInput = page.locator("#customerBalanceInput");
-    this.createCustomerButton = page.locator("#createCustomerBtn");
-    this.customerStatus = page.locator("#customerStatus");
-    this.customerName = page.locator("#customerName");
-    this.errorMessage = page.locator("#customerError");
-    this.accountSummary = page.locator("#accountSummary");
-    this.accountBalance = page.locator("#accountBalance");
-    this.statementActions = page.locator("#statementActions");
-    this.viewStatementButton = page.locator("#viewStatementBtn");
-    this.printToPdfButton = page.locator("#printToPdfBtn");
-    this.downloadPdfButton = page.locator("#downloadPdfBtn");
-    this.printStatementButton = page.locator("#printStatementBtn");
-    this.printNoCloseButton = page.locator("#printNoCloseBtn");
+    this.welcomeUser = page.getByText(/^Welcome/);
+    this.envLabel = page.getByText(/^ENV:/);
+    this.countryLabel = page.getByText(/^Country:/);
+    this.logoutButton = page.getByRole("button", { name: "Logout" });
+    this.transactionLink = page.getByRole("link", { name: "Transactions" });
+    this.customerId = page.getByLabel("Customer ID");
+    this.searchButton = page.getByRole("button", { name: "Search", exact: true });
+    this.customerNameInput = page.getByLabel("Customer name");
+    this.customerTypeInput = page.getByLabel("Customer type");
+    this.openingBalanceInput = page.getByLabel("Opening balance");
+    this.createCustomerButton = page.getByRole("button", { name: "Create customer" });
+    this.customerStatus = page.getByRole("status", { name: "Customer status" });
+    this.customerName = page.getByTestId("customer-name");
+    this.errorMessage = page.getByRole("alert");
+    this.accountSummary = page.getByTestId("account-summary");
+    this.accountBalance = page.getByTestId("account-balance");
+    this.statementActions = page.getByRole("group", { name: "Statement actions" });
+    this.viewStatementButton = page.getByRole("button", { name: "View statement" });
+    this.printToPdfButton = page.getByRole("button", { name: "Print to PDF" });
+    this.downloadPdfButton = page.getByRole("button", { name: "Download PDF" });
+    this.printStatementButton = page.getByRole("button", { name: "Print", exact: true });
+    this.printNoCloseButton = page.getByRole("button", { name: "Print no close" });
   }
 
   /** After sign-in the popup lands on the customer page; wait until it is ready. */
@@ -59,19 +59,19 @@ export class CustomerPage {
 
   async expectLoggedInAs(userId: string) {
     await expect(this.welcomeUser).toContainText(userId);
-    await expect(this.envLabel).toHaveText(ENV.toUpperCase());
-    await expect(this.countryLabel).toHaveText(COUNTRY);
+    await expect(this.envLabel).toHaveText(`ENV: ${ENV.toUpperCase()}`);
+    await expect(this.countryLabel).toHaveText(`Country: ${COUNTRY}`);
   }
 
   async logout() {
     await this.logoutButton.click();
-    await expect(this.page.locator("#loginModal")).toBeVisible();
+    await expect(this.page.getByRole("button", { name: "Sign in" })).toBeVisible();
   }
 
   async goToTransactionPage() {
     await expect(this.transactionLink).not.toHaveAttribute("href", "#");
     await this.transactionLink.click();
-    await expect(this.page.locator("#txnType")).toBeVisible();
+    await expect(this.page.getByLabel("Transaction type")).toBeVisible();
   }
 
   async searchCustomer(id: string) {

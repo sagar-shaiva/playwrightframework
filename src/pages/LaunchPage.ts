@@ -6,7 +6,7 @@ export class LaunchPage {
   readonly bankName: Locator;
 
   constructor(private readonly page: Page) {
-    this.bankName = page.locator("#bankName");
+    this.bankName = page.getByRole("heading", { name: "Pacific Bank" });
   }
 
   /** Opens the env/country URL and returns the popup page where login and the application run. */

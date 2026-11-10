@@ -14,14 +14,14 @@ export class TransactionPage {
   readonly welcomeUser: Locator;
 
   constructor(private readonly page: Page) {
-    this.type = page.locator("#txnType");
-    this.reason = page.locator("#txnReason");
-    this.amount = page.locator("#txnAmount");
-    this.submitButton = page.locator("#submitTxnBtn");
-    this.status = page.locator("#txnStatus");
-    this.transactionId = page.locator("#txnId");
-    this.accountBalance = page.locator("#accountBalance");
-    this.welcomeUser = page.locator("#welcomeUser");
+    this.type = page.getByLabel("Transaction type");
+    this.reason = page.getByLabel("Reason");
+    this.amount = page.getByLabel("Amount");
+    this.submitButton = page.getByRole("button", { name: "Submit transaction" });
+    this.status = page.getByRole("status", { name: "Transaction status" });
+    this.transactionId = page.getByTestId("transaction-id");
+    this.accountBalance = page.getByTestId("account-balance");
+    this.welcomeUser = page.getByText(/^Welcome/);
   }
 
   async submitTransaction(type: TransactionType, amount: number, reason?: string) {
@@ -43,7 +43,11 @@ export class TransactionPage {
   }
 
   async expectReasons(labels: string[]) {
-    await expect(this.reason.locator("option")).toHaveText(labels);
+    await expect(this.reason.getByRole("option")).toHaveText(labels);
+  }
+
+  async expectSelectedReason(label: string) {
+    await expect(this.reason.getByRole("option", { selected: true })).toHaveText(label);
   }
 
   async getBalance() {

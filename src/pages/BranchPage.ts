@@ -8,11 +8,11 @@ export class BranchPage {
   readonly message: Locator;
 
   constructor(private readonly page: Page) {
-    this.panel = page.locator("#branchPanel");
-    this.state = page.locator("#branchState");
-    this.openButton = page.locator("#openBranchBtn");
-    this.closeButton = page.locator("#closeBranchBtn");
-    this.message = page.locator("#branchMessage");
+    this.panel = page.getByRole("region", { name: "Branch status" });
+    this.state = page.getByTestId("branch-state");
+    this.openButton = page.getByRole("button", { name: "Open branch" });
+    this.closeButton = page.getByRole("button", { name: "Close branch" });
+    this.message = page.getByRole("status", { name: "Branch message" });
   }
 
   async ensureOpen() {

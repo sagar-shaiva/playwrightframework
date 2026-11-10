@@ -8,9 +8,9 @@ export class StatementPage {
 
   constructor(readonly page: Page) {
     this.heading = page.getByRole("heading", { name: "Account statement" });
-    this.customerId = page.locator("#statementCustomerId");
-    this.customerName = page.locator("#statementCustomerName");
-    this.balance = page.locator("#statementBalance");
+    this.customerId = page.getByTestId("statement-customer-id");
+    this.customerName = page.getByTestId("statement-customer-name");
+    this.balance = page.getByTestId("statement-balance");
   }
 
   async expectStatement(customerId: string, customerName: string) {

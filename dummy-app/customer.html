@@ -31,14 +31,14 @@
             <p class="eyebrow">Branch operations</p>
             <h2 id="branchTitle">Branch status</h2>
           </div>
-          <span id="branchState" class="branch-state">-</span>
+          <span id="branchState" class="branch-state" data-testid="branch-state">-</span>
         </div>
         <p id="branchSchedule" class="muted"></p>
         <div class="management-actions">
           <button id="openBranchBtn" class="btn-primary">Open branch</button>
           <button id="closeBranchBtn" class="btn-secondary danger">Close branch</button>
         </div>
-        <div id="branchMessage" class="status hidden" role="status"></div>
+        <div id="branchMessage" class="status hidden" role="status" aria-label="Branch message"></div>
       </section>
       <section class="panel">
         <div id="suCustomerFields" class="form-grid hidden">
@@ -69,14 +69,14 @@
         <div id="suDeleteAction" class="management-actions hidden">
           <button id="deleteCustomerBtn" class="btn-secondary danger">Delete customer</button>
         </div>
-        <div id="customerStatus" class="status hidden" role="status"></div>
-        <div id="customerName" class="result"></div>
-        <div id="customerError" class="error hidden"></div>
-        <div id="accountSummary" class="summary hidden">
+        <div id="customerStatus" class="status hidden" role="status" aria-label="Customer status"></div>
+        <div id="customerName" class="result" data-testid="customer-name"></div>
+        <div id="customerError" class="error hidden" role="alert"></div>
+        <div id="accountSummary" class="summary hidden" data-testid="account-summary">
           <span>Customer: <b id="currentCustomer">-</b></span>
-          <span>Balance: <b id="accountBalance">0.00</b></span>
+          <span>Balance: <b id="accountBalance" data-testid="account-balance">0.00</b></span>
         </div>
-        <div id="statementActions" class="statement-actions hidden">
+        <div id="statementActions" class="statement-actions hidden" role="group" aria-label="Statement actions">
           <button id="viewStatementBtn" class="btn-secondary">View statement</button>
           <button id="printToPdfBtn" class="btn-secondary">Print to PDF</button>
           <button id="downloadPdfBtn" class="btn-secondary">Download PDF</button>

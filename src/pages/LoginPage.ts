@@ -9,11 +9,11 @@ export class LoginPage {
   readonly errorMessage: Locator;
 
   constructor(private readonly page: Page) {
-    this.loginForm = page.locator("#loginModal");
-    this.username = page.locator("#username");
-    this.password = page.locator("#password");
-    this.loginButton = page.locator("#loginBtn");
-    this.errorMessage = page.locator("#loginError");
+    this.loginForm = page.getByRole("heading", { name: "Pacific Teller" });
+    this.username = page.getByLabel("User ID");
+    this.password = page.getByLabel("Password");
+    this.loginButton = page.getByRole("button", { name: "Sign in" });
+    this.errorMessage = page.getByRole("alert");
   }
 
   async expectLoaded() {

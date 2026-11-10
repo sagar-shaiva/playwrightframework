@@ -94,7 +94,7 @@ test.describe("Customer deposit", () => {
         dialogs.expectNext(expectedMessages.transactionSuccess);
         await transactionPage.submitTransaction("deposit", transactions.deposit.amount, reason);
         await transactionPage.expectSuccess();
-        await expect(transactionPage.reason.locator("option:checked")).toHaveText(reason);
+        await transactionPage.expectSelectedReason(reason);
       });
     }
 

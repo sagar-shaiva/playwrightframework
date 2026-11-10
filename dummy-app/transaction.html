@@ -27,7 +27,7 @@
       </section>
       <div id="accountSummary" class="summary hidden">
         <span>Customer: <b id="currentCustomer">-</b></span>
-        <span>Balance: <b id="accountBalance">0.00</b></span>
+        <span>Balance: <b id="accountBalance" data-testid="account-balance">0.00</b></span>
       </div>
       <section class="panel">
         <label for="txnType">Transaction type</label>
@@ -40,8 +40,8 @@
         <label for="txnAmount">Amount</label>
         <input id="txnAmount" type="number" min="0" step="0.01" placeholder="0.00" />
         <button id="submitTxnBtn" class="btn-primary" disabled>Submit transaction</button>
-        <div id="txnStatus" class="status hidden"></div>
-        <div id="txnReference" class="summary hidden">Transaction ID: <b id="txnId">-</b></div>
+        <div id="txnStatus" class="status hidden" role="status" aria-label="Transaction status"></div>
+        <div id="txnReference" class="summary hidden">Transaction ID: <b id="txnId" data-testid="transaction-id">-</b></div>
       </section>
     </main>
     <script src="site.js"></script>
