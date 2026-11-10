@@ -17,14 +17,14 @@ test.describe("Database customer withdrawal", () => {
     let transactionId = "";
 
     await test.step("UI: withdraw from the created customer", async () => {
-      await customerPage.open();
-      await customerPage.search(customerId);
-      await customerPage.expectDatabaseCustomerFound(flow.name);
+      await customerPage.expectLoaded();
+      await customerPage.searchCustomer(customerId);
+      await customerPage.expectCustomerFound(flow.name);
       expect(await customerPage.getBalance()).toBe(balanceBefore);
 
-      await customerPage.goToTransaction();
+      await customerPage.goToTransactionPage();
       dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submit("withdraw", flow.withdrawalAmount, flow.withdrawalReason);
+      await transactionPage.submitTransaction("withdraw", flow.withdrawalAmount, flow.withdrawalReason);
       await transactionPage.expectSuccess();
       await expect(transactionPage.transactionId).toHaveText(/^\d+$/);
       transactionId = (await transactionPage.transactionId.textContent()) ?? "";
@@ -67,21 +67,21 @@ test.describe("Customer withdrawal", () => {
 
   test.describe("with a selected customer", () => {
     test.beforeEach(async ({ customerPage }) => {
-      await customerPage.open();
-      await customerPage.search(customers.valid.id);
-      await customerPage.goToTransaction();
+      await customerPage.expectLoaded();
+      await customerPage.searchCustomer(customers.valid.id);
+      await customerPage.goToTransactionPage();
     });
 
     test("decreases the account balance", async ({ transactionPage, dialogs }) => {
       dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submit("withdraw", transactions.withdraw.amount, transactions.withdraw.reason);
+      await transactionPage.submitTransaction("withdraw", transactions.withdraw.amount, transactions.withdraw.reason);
       await transactionPage.expectSuccess();
       expect(await transactionPage.getBalance()).toBe(transactions.withdraw.expectedBalance);
     });
 
     test("allows withdrawing the full balance", async ({ transactionPage, dialogs }) => {
       dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submit("withdraw", customers.valid.balance);
+      await transactionPage.submitTransaction("withdraw", customers.valid.balance);
       await transactionPage.expectSuccess();
       expect(await transactionPage.getBalance()).toBe(0);
     });
@@ -94,7 +94,7 @@ test.describe("Customer withdrawal", () => {
     for (const reason of transactions.withdraw.reasons) {
       test(`accepts the reason "${reason}"`, async ({ transactionPage, dialogs }) => {
         dialogs.expectNext(expectedMessages.transactionSuccess);
-        await transactionPage.submit("withdraw", transactions.withdraw.amount, reason);
+        await transactionPage.submitTransaction("withdraw", transactions.withdraw.amount, reason);
         await transactionPage.expectSuccess();
         await expect(transactionPage.reason.locator("option:checked")).toHaveText(reason);
       });
@@ -102,29 +102,29 @@ test.describe("Customer withdrawal", () => {
 
     test("rejects a withdrawal above the balance", async ({ transactionPage, dialogs }) => {
       dialogs.expectNext(expectedMessages.insufficientFunds);
-      await transactionPage.submit("withdraw", transactions.overdraft.amount);
+      await transactionPage.submitTransaction("withdraw", transactions.overdraft.amount);
       await transactionPage.expectError(expectedMessages.insufficientFunds);
     });
 
     test("rejects a withdrawal one cent above the balance", async ({ transactionPage, dialogs }) => {
       dialogs.expectNext(expectedMessages.insufficientFunds);
-      await transactionPage.submit("withdraw", customers.valid.balance + transactions.withdraw.overBalanceIncrement);
+      await transactionPage.submitTransaction("withdraw", customers.valid.balance + transactions.withdraw.overBalanceIncrement);
       await transactionPage.expectError(expectedMessages.insufficientFunds);
     });
 
     for (const amount of transactions.invalidAmounts) {
       test(`rejects invalid amount ${amount}`, async ({ transactionPage, dialogs }) => {
         dialogs.expectNext(expectedMessages.invalidAmount);
-        await transactionPage.submit("withdraw", amount);
+        await transactionPage.submitTransaction("withdraw", amount);
         await transactionPage.expectError(expectedMessages.invalidAmount);
       });
     }
   });
 
-  test("cannot withdraw before selecting a customer", async ({ transactionPage, dialogs }) => {
-    await transactionPage.open();
+  test("cannot withdraw before selecting a customer", async ({ customerPage, transactionPage, dialogs }) => {
+    await customerPage.goToTransactionPage();
     dialogs.expectNext(expectedMessages.customerRequired);
-    await transactionPage.submit("withdraw", transactions.unselectedCustomerAmount);
+    await transactionPage.submitTransaction("withdraw", transactions.unselectedCustomerAmount);
     await transactionPage.expectError(expectedMessages.customerRequired);
   });
 });

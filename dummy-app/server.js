@@ -428,7 +428,9 @@ const server = http.createServer(async (req, res) => {
 
   const resource = path.basename(urlPath);
 
-  if (urlPath === "/" || resource.startsWith("access-") || resource.startsWith("login-")) {
+  if (urlPath === "/" || resource.startsWith("access-")) {
+    urlPath = "/launch.html";
+  } else if (resource.startsWith("login-")) {
     urlPath = "/login.html";
   } else if (resource.startsWith("customer-")) {
     urlPath = "/customer.html";

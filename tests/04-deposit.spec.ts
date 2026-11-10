@@ -15,14 +15,14 @@ test.describe("Database customer deposit", () => {
     let transactionId = "";
 
     await test.step("UI: deposit into the created customer", async () => {
-      await customerPage.open();
-      await customerPage.search(customerId);
-      await customerPage.expectDatabaseCustomerFound(flow.name);
+      await customerPage.expectLoaded();
+      await customerPage.searchCustomer(customerId);
+      await customerPage.expectCustomerFound(flow.name);
       expect(await customerPage.getBalance()).toBe(flow.openingBalance);
 
-      await customerPage.goToTransaction();
+      await customerPage.goToTransactionPage();
       dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submit("deposit", flow.depositAmount, flow.depositReason);
+      await transactionPage.submitTransaction("deposit", flow.depositAmount, flow.depositReason);
       await transactionPage.expectSuccess();
       await expect(transactionPage.transactionId).toHaveText(/^\d+$/);
       transactionId = (await transactionPage.transactionId.textContent()) ?? "";
@@ -65,21 +65,21 @@ test.describe("Customer deposit", () => {
 
   test.describe("with a selected customer", () => {
     test.beforeEach(async ({ customerPage }) => {
-      await customerPage.open();
-      await customerPage.search(customers.valid.id);
-      await customerPage.goToTransaction();
+      await customerPage.expectLoaded();
+      await customerPage.searchCustomer(customers.valid.id);
+      await customerPage.goToTransactionPage();
     });
 
     test("increases the account balance", async ({ transactionPage, dialogs }) => {
       dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submit("deposit", transactions.deposit.amount, transactions.deposit.reason);
+      await transactionPage.submitTransaction("deposit", transactions.deposit.amount, transactions.deposit.reason);
       await transactionPage.expectSuccess();
       expect(await transactionPage.getBalance()).toBe(transactions.deposit.expectedBalance);
     });
 
     test("accepts a decimal amount", async ({ transactionPage, dialogs }) => {
       dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submit("deposit", transactions.deposit.decimalAmount);
+      await transactionPage.submitTransaction("deposit", transactions.deposit.decimalAmount);
       await transactionPage.expectSuccess();
       expect(await transactionPage.getBalance()).toBeCloseTo(customers.valid.balance + transactions.deposit.decimalAmount, 2);
     });
@@ -92,7 +92,7 @@ test.describe("Customer deposit", () => {
     for (const reason of transactions.deposit.reasons) {
       test(`accepts the reason "${reason}"`, async ({ transactionPage, dialogs }) => {
         dialogs.expectNext(expectedMessages.transactionSuccess);
-        await transactionPage.submit("deposit", transactions.deposit.amount, reason);
+        await transactionPage.submitTransaction("deposit", transactions.deposit.amount, reason);
         await transactionPage.expectSuccess();
         await expect(transactionPage.reason.locator("option:checked")).toHaveText(reason);
       });
@@ -101,16 +101,16 @@ test.describe("Customer deposit", () => {
     for (const amount of transactions.invalidAmounts) {
       test(`rejects invalid amount ${amount}`, async ({ transactionPage, dialogs }) => {
         dialogs.expectNext(expectedMessages.invalidAmount);
-        await transactionPage.submit("deposit", amount);
+        await transactionPage.submitTransaction("deposit", amount);
         await transactionPage.expectError(expectedMessages.invalidAmount);
       });
     }
   });
 
-  test("cannot deposit before selecting a customer", async ({ transactionPage, dialogs }) => {
-    await transactionPage.open();
+  test("cannot deposit before selecting a customer", async ({ customerPage, transactionPage, dialogs }) => {
+    await customerPage.goToTransactionPage();
     dialogs.expectNext(expectedMessages.customerRequired);
-    await transactionPage.submit("deposit", transactions.unselectedCustomerAmount);
+    await transactionPage.submitTransaction("deposit", transactions.unselectedCustomerAmount);
     await transactionPage.expectError(expectedMessages.customerRequired);
   });
 });
@@ -118,9 +118,9 @@ test.describe("Customer deposit", () => {
 test.describe("Customer deposit by a non-Teller user", () => {
   test.use({ storageState: getAuthFile(data.userIds.BM) });
 
-  test("is blocked", async ({ transactionPage, dialogs }) => {
+  test("is blocked", async ({ customerPage, transactionPage, dialogs }) => {
     dialogs.expectNext(expectedMessages.tellerRequired);
-    await transactionPage.open();
+    await customerPage.goToTransactionPage();
     await expect(transactionPage.submitButton).toBeDisabled();
     await transactionPage.expectError(expectedMessages.tellerRequired);
   });

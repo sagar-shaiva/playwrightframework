@@ -378,7 +378,18 @@
     $("submitTxnBtn").disabled = false;
   }
 
+  function openLoginWindow() {
+    window.open(pageUrl("login"), "pacificTellerLogin", "popup=yes,width=1200,height=900");
+  }
+
   document.addEventListener("DOMContentLoaded", async function () {
+    if (currentPage === "launch") {
+      $("launchEnv").textContent = env.toUpperCase();
+      $("launchCountry").textContent = country;
+      $("openLoginBtn").addEventListener("click", openLoginWindow);
+      openLoginWindow();
+      return;
+    }
     if (currentPage === "login") {
       var existingAuth = await readAuth();
       if (existingAuth && existingAuth.country === country && existingAuth.env === env && existingAuth.userId) {

@@ -46,7 +46,7 @@ tests/                     # Teller, user-specific, multi-user, and manual-login
   10-teller-customer.spec.ts
   11-user-specific.spec.ts
   99-branch-close.teardown.ts # SU closes the branch after all tests
-dummy-app/                 # login.html, customer.html, transaction.html test target
+dummy-app/                 # launch.html (bank info), login.html popup, customer.html, transaction.html
 reports/<env>/<country>/<DD-MM-YYYY>/ # reports and test artifacts
 auth/<env>/<userId>.json     # saved storageState sessions
 ```
@@ -239,6 +239,12 @@ npm run report
 
 ## Authentication (storageState)
 
+Opening an env/country URL shows a launch page with the bank name and info. That page opens a
+popup with the login form, and the whole application (customer, transaction pages) runs inside
+the popup. `launchPage.openLoginPopup()` opens the URL and returns the popup page; the `appPage` fixture
+passes that popup to `loginPage`, `customerPage`, `transactionPage`, `dialogs`, and screenshots,
+so specs do not deal with the popup themselves.
+
 `tests/01-branch-open.setup.ts` runs before authentication and ensures the branch is open using SU.
 Then `tests/02-auth.setup.ts` logs in every configured user ID and saves each session to
 `auth/<env>/<userId>.json`. `tests/99-branch-close.teardown.ts` closes the branch after all dependent
@@ -254,7 +260,7 @@ import { data, getAuthFile } from "../config/env.config";
 test.use({ storageState: getAuthFile(data.userIds.T) });
 
 test("opens customer search", async ({ customerPage }) => {
-  await customerPage.open();
+  await customerPage.expectLoaded();
 });
 ```
 
@@ -265,7 +271,7 @@ test.describe("Branch Manager", () => {
   test.use({ storageState: getAuthFile(data.userIds.BM) });
 
   test("approves a request", async ({ customerPage }) => {
-    await customerPage.open();
+    await customerPage.expectLoaded();
   });
 });
 ```
@@ -274,14 +280,14 @@ When one test needs another user in addition to its selected session, use `asUse
 
 ```ts
 test("teller submits and manager reviews", async ({ customerPage, asUser }) => {
-  await customerPage.open();
+  await customerPage.expectLoaded();
 
-  const managerLogin = await asUser(data.userIds.MG);
-  await managerLogin.expectAuthenticatedAs(data.userIds.MG);
+  const managerCustomerPage = await asUser(data.userIds.MG);
+  await managerCustomerPage.expectLoggedInAs(data.userIds.MG);
 });
 ```
 
-`asUser` returns only the additional user's `LoginPage`; the regular page fixtures continue
+`asUser` returns the additional user's `CustomerPage`; the regular page fixtures continue
 to use the test's primary session.
 
 Login scenarios use `test` without a `storageState` override, so they start logged out:
@@ -290,10 +296,15 @@ Login scenarios use `test` without a `storageState` override, so they start logg
 import { test } from "../src/fixtures/test.fixture";
 
 test("logs in manually", async ({ loginPage }) => {
-  await loginPage.open();
+  await loginPage.expectLoaded();
   await loginPage.login("username", "password");
 });
 ```
+
+Page-object naming: actions are verbs (`login`, `searchCustomer`, `submitTransaction`),
+navigation starts with `goTo` (`goToTransactionPage`), `open*` is used only when a new window
+opens (`openLoginPopup`, `openStatement`), and assertions start with `expect`
+(`expectLoaded`, `expectLoggedInAs`, `expectCustomerFound`).
 
 ## SQL Server (SSMS) assertions
 
@@ -331,7 +342,7 @@ customer also deletes their transactions.
 
 The Reason dropdown on the transaction page depends on the type (deposit and withdrawal have
 different lists), and the server rejects a reason that does not belong to the type. Pass the label to
-`transactionPage.submit(type, amount, reason)`; if omitted, the first reason is used. After a
+`transactionPage.submitTransaction(type, amount, reason)`; if omitted, the first reason is used. After a
 successful posting the page shows `Transaction ID: <n>` (`transactionPage.transactionId`), which the
 DB step uses to look up the exact row. Dummy customers (1001 to 1003) have no DB row, so no ID is shown.
 
@@ -394,7 +405,7 @@ dialogs before the action that opens them; their exact message is validated befo
 
 ```ts
 dialogs.expectNext(data.expectedMessages.transactionSuccess);
-await transactionPage.submit("deposit", transactions.deposit.amount);
+await transactionPage.submitTransaction("deposit", transactions.deposit.amount);
 ```
 
 ## Pointing at the real application

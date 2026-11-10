@@ -11,8 +11,8 @@ test("SU creates customer for transaction workflow", async ({ customerPage, db }
   let customerId = "";
 
   await test.step("UI: create customer", async () => {
-    await customerPage.open();
-    await customerPage.expectUser(data.userIds.SU);
+    await customerPage.expectLoaded();
+    await customerPage.expectLoggedInAs(data.userIds.SU);
 
     customerId = await customerPage.createCustomer(flow.name, flow.type, flow.openingBalance);
     saveRuntimeData(testInfo, "customerId", customerId);

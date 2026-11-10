@@ -9,9 +9,10 @@ test.use({ storageState: getAuthFile(data.userIds.T) });
 
 test.describe.serial("Customer statement", () => {
   test.beforeEach(async ({ customerPage }) => {
-    await customerPage.open();
-    await customerPage.search(customer.id);
-    await customerPage.expectFound(customer.name);
+    await customerPage.expectLoaded();
+    await customerPage.searchCustomer(customer.id);
+    await customerPage.expectCustomerFound(customer.name);
+    await customerPage.expectStatementActionsVisible();
   });
 
   test("views the statement in a new page in the same context", async ({ customerPage, context }) => {

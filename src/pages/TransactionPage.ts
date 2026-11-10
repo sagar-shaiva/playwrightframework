@@ -1,5 +1,4 @@
 import { Page, Locator, expect } from "@playwright/test";
-import { getAppUrl } from "../../config/env.config";
 
 export type TransactionType = "deposit" | "withdraw";
 
@@ -13,7 +12,6 @@ export class TransactionPage {
   readonly transactionId: Locator;
   readonly accountBalance: Locator;
   readonly welcomeUser: Locator;
-  readonly transactionLink: Locator;
 
   constructor(private readonly page: Page) {
     this.type = page.locator("#txnType");
@@ -24,16 +22,9 @@ export class TransactionPage {
     this.transactionId = page.locator("#txnId");
     this.accountBalance = page.locator("#accountBalance");
     this.welcomeUser = page.locator("#welcomeUser");
-    this.transactionLink = page.locator("#navTransaction");
   }
 
-  async open() {
-    await this.page.goto(getAppUrl());
-    await this.transactionLink.click();
-    await expect(this.type).toBeVisible();
-  }
-
-  async submit(type: TransactionType, amount: number, reason?: string) {
+  async submitTransaction(type: TransactionType, amount: number, reason?: string) {
     await this.type.selectOption(type);
     if (reason) await this.reason.selectOption({ label: reason });
     await this.amount.fill(String(amount));

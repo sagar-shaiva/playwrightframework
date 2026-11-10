@@ -1,5 +1,5 @@
 import { Page, Locator, expect } from "@playwright/test";
-import { COUNTRY, ENV, getAppUrl } from "../../config/env.config";
+import { COUNTRY, ENV } from "../../config/env.config";
 
 /** Customer lookup panel of the teller dashboard. */
 export class CustomerPage {
@@ -51,12 +51,13 @@ export class CustomerPage {
     this.printNoCloseButton = page.locator("#printNoCloseBtn");
   }
 
-  async open() {
-    await this.page.goto(getAppUrl());
+  /** After sign-in the popup lands on the customer page; wait until it is ready. */
+  async expectLoaded() {
     await expect(this.customerId).toBeVisible();
+    await expect(this.transactionLink).not.toHaveAttribute("href", "#");
   }
 
-  async expectUser(userId: string) {
+  async expectLoggedInAs(userId: string) {
     await expect(this.welcomeUser).toContainText(userId);
     await expect(this.envLabel).toHaveText(ENV.toUpperCase());
     await expect(this.countryLabel).toHaveText(COUNTRY);
@@ -67,12 +68,13 @@ export class CustomerPage {
     await expect(this.page.locator("#loginModal")).toBeVisible();
   }
 
-  async goToTransaction() {
+  async goToTransactionPage() {
+    await expect(this.transactionLink).not.toHaveAttribute("href", "#");
     await this.transactionLink.click();
     await expect(this.page.locator("#txnType")).toBeVisible();
   }
 
-  async search(id: string) {
+  async searchCustomer(id: string) {
     await this.customerId.fill(id);
     await this.searchButton.click();
   }
@@ -89,17 +91,16 @@ export class CustomerPage {
     return customerId;
   }
 
-  async expectDatabaseCustomerFound(name: string) {
+  async expectCustomerFound(name: string) {
     await expect(this.customerName).toContainText(name);
     await expect(this.accountSummary).toBeVisible();
   }
 
-  async expectFound(name: string) {
-    await expect(this.customerName).toContainText(name);
+  async expectStatementActionsVisible() {
     await expect(this.statementActions).toBeVisible();
   }
 
-  async expectNotFound() {
+  async expectCustomerNotFound() {
     await expect(this.errorMessage).toBeVisible();
   }
 

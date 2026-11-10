@@ -2,6 +2,7 @@ import { Page, test as base, expect } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 import { COUNTRY, ENV, getAuthFile } from "../../config/env.config";
+import { LaunchPage } from "../pages/LaunchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { CustomerPage } from "../pages/CustomerPage";
 import { TransactionPage } from "../pages/TransactionPage";
@@ -10,6 +11,7 @@ import { DialogHandler } from "../utils/dialogHandler";
 import { getDateFolder, getFileTimestamp } from "../utils/dateHelper";
 
 type PageFixtures = {
+  appPage: Page;
   loginPage: LoginPage;
   customerPage: CustomerPage;
   transactionPage: TransactionPage;
@@ -24,7 +26,7 @@ type DialogFixtures = {
 };
 
 type AuthFixtures = {
-  asUser: (userId: string) => Promise<LoginPage>;
+  asUser: (userId: string) => Promise<CustomerPage>;
 };
 
 type ScreenshotFixtures = {
@@ -34,17 +36,22 @@ type ScreenshotFixtures = {
 const emptyStorageState = { cookies: [], origins: [] };
 
 const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFixtures & ScreenshotFixtures>({
-  loginPage: async ({ page }, use) => {
-    await use(new LoginPage(page));
+  appPage: async ({ page }, use) => {
+    const launchPage = new LaunchPage(page);
+    const appPage = await launchPage.openLoginPopup();
+    await use(appPage);
   },
-  customerPage: async ({ page }, use) => {
-    await use(new CustomerPage(page));
+  loginPage: async ({ appPage }, use) => {
+    await use(new LoginPage(appPage));
   },
-  transactionPage: async ({ page }, use) => {
-    await use(new TransactionPage(page));
+  customerPage: async ({ appPage }, use) => {
+    await use(new CustomerPage(appPage));
   },
-  takeScreenshot: async ({ page }, use, testInfo) => {
-    await use(async (name, targetPage = page) => {
+  transactionPage: async ({ appPage }, use) => {
+    await use(new TransactionPage(appPage));
+  },
+  takeScreenshot: async ({ appPage }, use, testInfo) => {
+    await use(async (name, targetPage = appPage) => {
       const screenshotFolder = path.resolve(process.cwd(), "reports", ENV, COUNTRY, getDateFolder(), "screenshots");
       const filePath = path.join(screenshotFolder, `${name}-${getFileTimestamp()}.png`);
 
@@ -55,8 +62,8 @@ const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFix
     });
   },
   dialogs: [
-    async ({ page }, use) => {
-      const dialogs = new DialogHandler(page);
+    async ({ appPage }, use) => {
+      const dialogs = new DialogHandler(appPage);
       try {
         await use(dialogs);
       } finally {
@@ -72,8 +79,10 @@ const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFix
 
     await use(async (userId) => {
       const page = await browser.newPage({ storageState: getAuthFile(userId) });
-      sessions.push({ page, dialogs: new DialogHandler(page) });
-      return new LoginPage(page);
+      const launchPage = new LaunchPage(page);
+      const appPage = await launchPage.openLoginPopup();
+      sessions.push({ page, dialogs: new DialogHandler(appPage) });
+      return new CustomerPage(appPage);
     });
 
     const dialogErrors: string[] = [];

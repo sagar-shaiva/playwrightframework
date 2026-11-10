@@ -43,6 +43,7 @@
     "test:customer-create": "cross-env TEST_ENV=training COUNTRY=FJ playwright test --project=customer-create",
     "test:customer-transactions": "cross-env TEST_ENV=training COUNTRY=FJ playwright test --project=customer-withdrawal",
     "report": "playwright show-report",
+    "typecheck": "tsc -p tsconfig.json",
     "trace": "playwright show-trace",
     "allure:generate": "allure generate --clean",
     "allure:open": "allure open",
@@ -54,12 +55,13 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@playwright/test": "^1.64.1",
+    "@playwright/test": "^1.65.0",
     "@types/mssql": "^9.1.5",
     "@types/node": "^26.6.5",
     "allure": "^3.22.1",
     "allure-playwright": "^3.14.0",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
