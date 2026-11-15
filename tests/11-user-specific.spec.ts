@@ -1,4 +1,4 @@
-import { test, expect } from "../src/fixtures/test.fixture";
+import { test, expect } from "../src/fixtures/test.fixtures";
 import { data, getAuthFile } from "../config/env.config";
 
 test.describe("Branch Manager user scenarios", () => {

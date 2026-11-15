@@ -1,4 +1,4 @@
-import { test } from "../src/fixtures/test.fixture";
+import { test } from "../src/fixtures/test.fixtures";
 import { data, getAuthFile } from "../config/env.config";
 
 test.describe("Expected dialogs", () => {

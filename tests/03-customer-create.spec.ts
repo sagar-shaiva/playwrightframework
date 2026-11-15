@@ -1,4 +1,4 @@
-import { test, expect } from "../src/fixtures/test.fixture";
+import { test, expect } from "../src/fixtures/test.fixtures";
 import { data, getAuthFile } from "../config/env.config";
 import { saveRuntimeData } from "../src/utils/runtimeData";
 import { Database } from "../src/utils/database";

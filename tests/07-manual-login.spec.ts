@@ -1,4 +1,4 @@
-import { test } from "../src/fixtures/test.fixture";
+import { test } from "../src/fixtures/test.fixtures";
 import { data } from "../config/env.config";
 
 test.describe("Manual login", () => {

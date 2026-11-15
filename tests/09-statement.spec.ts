@@ -1,4 +1,4 @@
-import { test, expect } from "../src/fixtures/test.fixture";
+import { test, expect } from "../src/fixtures/test.fixtures";
 import * as fs from "fs";
 import { data, getAuthFile } from "../config/env.config";
 import { generatePdfFromPage, saveBrowserDownload, savePdfResponseBody } from "../src/utils/statementPdf";

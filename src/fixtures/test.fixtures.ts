@@ -1,4 +1,4 @@
-import { Page, test as base, expect } from "@playwright/test";
+import { Page, expect, test as base } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 import { COUNTRY, ENV, getAuthFile } from "../../config/env.config";
@@ -111,7 +111,7 @@ const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFix
   },
 });
 
-/** Every test starts logged out unless its spec explicitly selects an auth file. */
+/** POM tests start logged out unless the spec explicitly selects an auth file. */
 export const test = appTest.extend({ storageState: emptyStorageState });
 
 export { expect };

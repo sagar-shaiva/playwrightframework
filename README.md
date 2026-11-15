@@ -27,7 +27,8 @@ config/
   env.config.ts            # loads one env/country data file and builds URLs, auth paths, DB config
 src/
   pages/                   # Page Objects (Login, Customer, Transaction)
-  fixtures/test.fixture.ts # injects page objects + SQL Server helper
+  fixtures/test.fixtures.ts # POM Playwright Test fixtures
+  fixtures/bdd.fixture.ts  # BDD fixtures and auth-tag handling
   schemas/test-data.schema.ts # validates and types environment/country JSON data
   types/                   # shared database and runtime-data contracts
   utils/                   # database (mssql) and report date helper
@@ -46,6 +47,7 @@ tests/                     # Teller, user-specific, multi-user, and manual-login
   10-teller-customer.spec.ts
   11-user-specific.spec.ts
   99-branch-close.teardown.ts # SU closes the branch after all tests
+features/                  # Numbered Playwright-BDD features, matching step files in features/steps/
 dummy-app/                 # launch.html (bank info), login.html popup, customer.html, transaction.html
 reports/<env>/<country>/<DD-MM-YYYY>/ # reports and test artifacts
 auth/<env>/<userId>.json     # saved storageState sessions
@@ -73,6 +75,15 @@ npm run test:qa-FJ
 npm run test:uat-PNG
 npm run test:training-CK
 
+# run headed (append :headed to any POM or BDD target)
+npm run test:training-FJ:headed
+
+# run the BDD feature suite for an environment and country
+npm run bdd:training-FJ
+npm run bdd:qa-PNG
+npm run bdd:uat-CK
+npm run bdd:training-FJ:headed
+
 # whole environment (all-country default FJ unless COUNTRY set)
 npm run test:qa
 
@@ -86,16 +97,42 @@ npm run test:customer-create
 npm run test:customer-transactions
 ```
 
+### POM and BDD
+
+POM commands such as `npm run test:training-FJ` and BDD commands such as
+`npm run bdd:training-FJ` both use `playwright.config.ts`. The `framework=bdd` flag selects the BDD
+projects; without it, the POM projects are selected. BDD commands run their own branch-open,
+per-user auth, and branch-close feature projects; they do not depend on POM setup projects. BDD
+logs in and saves a session for each configured role, then customer-create, deposit, and withdrawal
+run in dependency order; other BDD scenarios run afterward. Append `:headed` to any target command to
+open the browser, for example `npm run bdd:training-FJ:headed`; commands without that suffix run
+headless.
+
+Numbered `.feature` and `features/steps/` files reuse the same page objects and JSON test data. Each
+feature and step pair has a matching numeric prefix and `@bddNN` tag to scope definitions. Indexed
+reason/amount scenario tags select JSON entries without Examples tables, so the HTML report includes
+one case per POM test while keeping test values in JSON.
+
+Authenticated BDD scenarios use the same states saved by `tests/02-auth.setup.ts`: tag scenarios
+with `@auth-SU`, `@auth-T`, `@auth-BM`, or another configured role. BDD projects depend on the
+existing branch/auth setup. Use `@noauth` only for scenarios that intentionally test manual login.
+BDD HTML and JSON reports are written under `bdd-html` and `bdd-results`; POM reports stay under
+`html` and `results`.
+
+Use the same environment and country matrix for both lanes: `test:<env>-<country>` for POM and
+`bdd:<env>-<country>` for BDD, with `:headed` variants for either lane.
+
 ### Dependent workflows
 
-File number prefixes (`01`, `02`, ...) are only for navigation. Execution order comes from the
-project `dependencies` in `playwright.config.ts`, which stay reliable when tests are sharded or
-parallelized. Each UI test verifies backend state right after the UI action, in a `DB:` test step:
+File number prefixes (`01`, `02`, ...) are only for navigation. POM execution order comes from the
+project `dependencies` in `playwright.config.ts`; BDD uses the corresponding workflow dependencies
+in the same config. Each UI test verifies backend state right after the UI action, in a
+`DB:` test step:
 
 ```text
-branch-open -> setup -> customer-create -> customer-deposit -> customer-withdrawal
-                  \-> <env>-<country> (normal specs)
-branch-close (teardown of branch-open) runs after everything above
+POM: branch-open -> setup -> customer-create -> customer-deposit -> customer-withdrawal -> normal specs
+BDD: branch-open -> auth -> customer-create -> customer-deposit -> customer-withdrawal -> normal scenarios
+  branch-close runs as teardown after the selected workflow
 ```
 
 1. `branch-open` signs in as SU and ensures the branch is open.
@@ -250,11 +287,12 @@ Then `tests/02-auth.setup.ts` logs in every configured user ID and saves each se
 `auth/<env>/<userId>.json`. `tests/99-branch-close.teardown.ts` closes the branch after all dependent
 projects finish.
 
-Every spec imports the same `test`, which starts logged out. Authenticated specs explicitly
-select the user at the top of the file or inside a `describe` block:
+POM specs import `test` from `src/fixtures/test.fixtures.ts`; BDD steps import it from
+`src/fixtures/bdd.fixture.ts`. Both expose the same page objects, database, dialogs, screenshots,
+and `asUser` fixtures. POM tests start logged out unless the spec explicitly selects a user:
 
 ```ts
-import { test } from "../src/fixtures/test.fixture";
+import { test } from "../src/fixtures/test.fixtures";
 import { data, getAuthFile } from "../config/env.config";
 
 test.use({ storageState: getAuthFile(data.userIds.T) });
@@ -293,7 +331,7 @@ to use the test's primary session.
 Login scenarios use `test` without a `storageState` override, so they start logged out:
 
 ```ts
-import { test } from "../src/fixtures/test.fixture";
+import { test } from "../src/fixtures/test.fixtures";
 
 test("logs in manually", async ({ loginPage }) => {
   await loginPage.expectLoaded();
