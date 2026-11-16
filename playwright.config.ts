@@ -5,12 +5,12 @@ import { getDateFolder } from "./src/utils/dateHelper";
 
 const date = getDateFolder();
 const reportRoot = `reports/${ENV}/${COUNTRY}/${date}`;
-const reportPrefix = process.env.framework === "bdd" ? "bdd-" : "";
+const reportPrefix = process.env.FRAMEWORK === "bdd" ? "bdd-" : "";
 const bddFeatures = {
   features: "features/*.feature",
   steps: ["features/steps/*.ts", "src/fixtures/bdd.fixture.ts"],
 };
-const isBddMode = process.env.framework === "bdd";
+const isBddMode = process.env.FRAMEWORK === "bdd";
 const bddProjects = [
   {
     ...defineBddProject({ ...bddFeatures, name: "bdd-branch-open", tags: "@bdd01" }),
@@ -101,6 +101,7 @@ const pomProjects = [
  */
 export default defineConfig({
   testDir: "./tests",
+  tag: process.env.TAG,
   fullyParallel: false,
   workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,

@@ -1,81 +1,81 @@
 @bdd @bdd04
-Feature: Deposit money into a customer account
+Feature: Customer deposits
 
   @auth-T
-  Scenario: Teller deposits into the customer created by BDD
-    Given the Teller session is active
-    When the Teller deposits the configured amount into the BDD customer
-    Then the customer balance includes the deposit
-    And the deposit is stored in the database when available
+  Scenario: Teller deposits into the customer created in this workflow
+    Given I am signed in as the Teller
+    When I deposit the configured amount into the customer created in this workflow
+    Then the customer's balance reflects the deposit
+    And the deposit is saved in the database when database checks are enabled
 
   @auth-T
-  Scenario: Teller increases the account balance with a deposit
-    Given the Teller session is active
-    When the Teller prepares the deposit form for an existing customer
-    Then the configured deposit increases the balance
+  Scenario: A configured deposit updates the customer's balance
+    Given I am signed in as the Teller
+    When I prepare a deposit for an existing customer
+    Then the configured deposit completes and the expected balance is displayed
 
   @auth-T
-  Scenario: Deposit requires a selected customer
-    Given the Teller session is active
-    When the Teller submits a deposit without selecting a customer
-    Then the customer selection error is shown
+  Scenario: A customer must be selected before making a deposit
+    Given I am signed in as the Teller
+    When I submit a deposit without selecting a customer
+    Then the customer selection error is displayed
 
   @auth-T
-  Scenario: Teller sees only configured deposit reasons
-    Given the Teller session is active
-    When the Teller opens deposit reasons for a known customer
-    Then only configured deposit reasons are available
+  Scenario: Only configured deposit reasons are available
+    Given I am signed in as the Teller
+    When I view the deposit reasons for a known customer
+    Then the available reasons match the configured deposit reasons
 
   @auth-T
-  Scenario: Teller can deposit a decimal amount
-    Given the Teller session is active
-    When the Teller deposits the configured decimal amount
-    Then the balance increases by the decimal deposit amount
+  Scenario: A decimal deposit updates the customer's balance
+    Given I am signed in as the Teller
+    When I deposit the configured decimal amount
+    Then the customer's balance reflects the decimal deposit
 
   @auth-T
-  Scenario: Teller accepts the first configured deposit reason
-    Given the Teller session is active
-    When the Teller prepares the deposit form for an existing customer
+  Scenario: Teller can use the first configured deposit reason
+    Given I am signed in as the Teller
+    When I prepare a deposit for an existing customer
     Then the first configured deposit reason is accepted
 
   @auth-T
-  Scenario: Teller accepts the second configured deposit reason
-    Given the Teller session is active
-    When the Teller prepares the deposit form for an existing customer
+  Scenario: Teller can use the second configured deposit reason
+    Given I am signed in as the Teller
+    When I prepare a deposit for an existing customer
     Then the second configured deposit reason is accepted
 
   @auth-T
-  Scenario: Teller accepts the third configured deposit reason
-    Given the Teller session is active
-    When the Teller prepares the deposit form for an existing customer
+  Scenario: Teller can use the third configured deposit reason
+    Given I am signed in as the Teller
+    When I prepare a deposit for an existing customer
     Then the third configured deposit reason is accepted
 
   @auth-T
-  Scenario: Teller accepts the fourth configured deposit reason
-    Given the Teller session is active
-    When the Teller prepares the deposit form for an existing customer
+  Scenario: Teller can use the fourth configured deposit reason
+    Given I am signed in as the Teller
+    When I prepare a deposit for an existing customer
     Then the fourth configured deposit reason is accepted
 
   @auth-T
-  Scenario: Teller accepts the fifth configured deposit reason
-    Given the Teller session is active
-    When the Teller prepares the deposit form for an existing customer
+  Scenario: Teller can use the fifth configured deposit reason
+    Given I am signed in as the Teller
+    When I prepare a deposit for an existing customer
     Then the fifth configured deposit reason is accepted
 
   @auth-T
-  Scenario: Teller rejects the first configured invalid deposit amount
-    Given the Teller session is active
-    When the Teller prepares the deposit form for an existing customer
+  Scenario: The first configured invalid deposit amount is rejected
+    Given I am signed in as the Teller
+    When I prepare the deposit form for amount checks
     Then the first configured invalid deposit amount is rejected
 
   @auth-T
-  Scenario: Teller rejects the second configured invalid deposit amount
-    Given the Teller session is active
-    When the Teller prepares the deposit form for an existing customer
+  Scenario: The second configured invalid deposit amount is rejected
+    Given I am signed in as the Teller
+    When I prepare the deposit form for amount checks
     Then the second configured invalid deposit amount is rejected
 
   @auth-BM
-  Scenario: A non-Teller cannot submit a deposit
-    Given the Branch Manager session is active
-    When a Branch Manager opens the deposit page
-    Then the transaction is blocked for a non-Teller
+  Scenario: A Branch Manager cannot submit a deposit
+    Given I am signed in as the Branch Manager
+    When a Branch Manager attempts to open the deposit page
+    Then the application prevents the transaction

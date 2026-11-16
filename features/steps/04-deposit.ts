@@ -10,40 +10,42 @@ let transactionId = "";
 let balanceAfterDeposit = 0;
 let balanceBeforeDecimalDeposit = 0;
 
-Given("the Teller session is active", async ({ customerPage }) => {
+Given("I am signed in as the Teller", async ({ customerPage }) => {
   await customerPage.expectLoaded();
   await customerPage.expectLoggedInAs(data.userIds.T);
 });
 
-Given("the Branch Manager session is active", async ({ customerPage }) => {
+Given("I am signed in as the Branch Manager", async ({ customerPage }) => {
   await customerPage.expectLoaded();
   await customerPage.expectLoggedInAs(data.userIds.BM);
 });
 
-When("the Teller deposits the configured amount into the BDD customer", async ({ customerPage, transactionPage, dialogs }) => {
+When("I deposit the configured amount into the customer created in this workflow", async ({ customerPage, transactionPage, dialogs }) => {
   const flow = data.generatedCustomerFlow;
   const customerId = getRuntimeData<string>("bddCustomerId");
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(customerId);
   await customerPage.expectCustomerFound(flow.name);
+  expect(await customerPage.getBalance()).toBe(flow.openingBalance);
   await customerPage.goToTransactionPage();
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("deposit", flow.depositAmount, flow.depositReason);
   await transactionPage.expectSuccess();
+  await expect(transactionPage.transactionId).toHaveText(/^\d+$/);
   transactionId = (await transactionPage.transactionId.textContent()) ?? "";
   balanceAfterDeposit = flow.openingBalance + flow.depositAmount;
   saveRuntimeData(test.info(), "bddDepositTransactionId", transactionId);
 });
 
-Then("the customer balance includes the deposit", async ({ transactionPage }) => {
+Then("the customer's balance reflects the deposit", async ({ transactionPage }) => {
   expect(await transactionPage.getBalance()).toBe(balanceAfterDeposit);
 });
 
-Then("the deposit is stored in the database when available", async ({ db }) => {
+Then("the deposit is saved in the database when database checks are enabled", async ({ db }) => {
   if (!Database.isAvailable()) return;
   const customerId = getRuntimeData<string>("bddCustomerId");
   const rows = await db.query<TransactionRow>(
-    `SELECT TransactionId, TransactionType, Amount, BalanceBefore, BalanceAfter, Reason, CreatedBy
+    `SELECT TransactionId, TransactionType, Amount, BalanceBefore, BalanceAfter, Reason, TransactionDateTime, CreatedBy
      FROM dbo.Transactions WHERE TransactionId = @transactionId AND CustomerId = @customerId`,
     { transactionId: Number(transactionId), customerId },
   );
@@ -55,54 +57,57 @@ Then("the deposit is stored in the database when available", async ({ db }) => {
     CreatedBy: data.userIds.T,
   });
   expect(Number(rows[0].Amount)).toBe(data.generatedCustomerFlow.depositAmount);
+  expect(Number(rows[0].BalanceBefore)).toBe(data.generatedCustomerFlow.openingBalance);
   expect(Number(rows[0].BalanceAfter)).toBe(balanceAfterDeposit);
+  expect(rows[0].TransactionDateTime).toBeInstanceOf(Date);
   const customerRows = await db.query<CustomerBalanceRow>("SELECT Balance FROM dbo.Customers WHERE CustomerId = @customerId", { customerId });
+  expect(customerRows).toHaveLength(1);
   expect(Number(customerRows[0].Balance)).toBe(balanceAfterDeposit);
 });
 
-When("the Teller submits a deposit without selecting a customer", async ({ customerPage, transactionPage, dialogs }) => {
+When("I submit a deposit without selecting a customer", async ({ customerPage, transactionPage, dialogs }) => {
   await customerPage.expectLoaded();
   await customerPage.goToTransactionPage();
   dialogs.expectNext(data.expectedMessages.customerRequired);
   await transactionPage.submitTransaction("deposit", data.transactions.unselectedCustomerAmount);
 });
 
-Then("the customer selection error is shown", async ({ transactionPage }) => {
+Then("the customer selection error is displayed", async ({ transactionPage }) => {
   await transactionPage.expectError(data.expectedMessages.customerRequired);
 });
 
-When("the Teller opens deposit reasons for a known customer", async ({ customerPage, transactionPage }) => {
+When("I view the deposit reasons for a known customer", async ({ customerPage, transactionPage }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
   await customerPage.goToTransactionPage();
   await transactionPage.type.selectOption("deposit");
 });
 
-Then("only configured deposit reasons are available", async ({ transactionPage }) => {
+Then("the available reasons match the configured deposit reasons", async ({ transactionPage }) => {
   await transactionPage.expectReasons(data.transactions.deposit.reasons);
 });
 
-When("the Teller deposits the configured decimal amount", async ({ customerPage, transactionPage, dialogs }) => {
+When("I deposit the configured decimal amount", async ({ customerPage, transactionPage, dialogs }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
-  balanceBeforeDecimalDeposit = await customerPage.getBalance();
+  balanceBeforeDecimalDeposit = data.customers.valid.balance;
   await customerPage.goToTransactionPage();
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("deposit", data.transactions.deposit.decimalAmount);
   await transactionPage.expectSuccess();
 });
 
-Then("the balance increases by the decimal deposit amount", async ({ transactionPage }) => {
+Then("the customer's balance reflects the decimal deposit", async ({ transactionPage }) => {
   expect(await transactionPage.getBalance()).toBeCloseTo(balanceBeforeDecimalDeposit + data.transactions.deposit.decimalAmount, 2);
 });
 
-When("the Teller prepares the deposit form for an existing customer", async ({ customerPage }) => {
+When("I prepare a deposit for an existing customer", async ({ customerPage }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
   await customerPage.goToTransactionPage();
 });
 
-Then("the configured deposit increases the balance", async ({ transactionPage, dialogs }) => {
+Then("the configured deposit completes and the expected balance is displayed", async ({ transactionPage, dialogs }) => {
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("deposit", data.transactions.deposit.amount, data.transactions.deposit.reason);
   await transactionPage.expectSuccess();
@@ -111,7 +116,6 @@ Then("the configured deposit increases the balance", async ({ transactionPage, d
 
 Then("the first configured deposit reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.deposit.reasons[0];
-  if (!reason) throw new Error("No deposit reason exists for this scenario tag");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("deposit", data.transactions.deposit.amount, reason);
   await transactionPage.expectSuccess();
@@ -120,7 +124,6 @@ Then("the first configured deposit reason is accepted", async ({ transactionPage
 
 Then("the second configured deposit reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.deposit.reasons[1];
-  if (!reason) throw new Error("No second deposit reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("deposit", data.transactions.deposit.amount, reason);
   await transactionPage.expectSuccess();
@@ -129,7 +132,6 @@ Then("the second configured deposit reason is accepted", async ({ transactionPag
 
 Then("the third configured deposit reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.deposit.reasons[2];
-  if (!reason) throw new Error("No third deposit reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("deposit", data.transactions.deposit.amount, reason);
   await transactionPage.expectSuccess();
@@ -138,7 +140,6 @@ Then("the third configured deposit reason is accepted", async ({ transactionPage
 
 Then("the fourth configured deposit reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.deposit.reasons[3];
-  if (!reason) throw new Error("No fourth deposit reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("deposit", data.transactions.deposit.amount, reason);
   await transactionPage.expectSuccess();
@@ -147,14 +148,13 @@ Then("the fourth configured deposit reason is accepted", async ({ transactionPag
 
 Then("the fifth configured deposit reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.deposit.reasons[4];
-  if (!reason) throw new Error("No fifth deposit reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("deposit", data.transactions.deposit.amount, reason);
   await transactionPage.expectSuccess();
   await transactionPage.expectSelectedReason(reason);
 });
 
-When("the Teller prepares the deposit form for amount checks", async ({ customerPage, transactionPage }) => {
+When("I prepare the deposit form for amount checks", async ({ customerPage, transactionPage }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
   await customerPage.goToTransactionPage();
@@ -163,7 +163,6 @@ When("the Teller prepares the deposit form for amount checks", async ({ customer
 
 Then("the first configured invalid deposit amount is rejected", async ({ transactionPage, dialogs }) => {
   const amount = data.transactions.invalidAmounts[0];
-  if (amount === undefined) throw new Error("No invalid deposit amount is configured");
   dialogs.expectNext(data.expectedMessages.invalidAmount);
   await transactionPage.submitTransaction("deposit", amount);
   await transactionPage.expectError(data.expectedMessages.invalidAmount);
@@ -171,19 +170,18 @@ Then("the first configured invalid deposit amount is rejected", async ({ transac
 
 Then("the second configured invalid deposit amount is rejected", async ({ transactionPage, dialogs }) => {
   const amount = data.transactions.invalidAmounts[1];
-  if (amount === undefined) throw new Error("No second invalid deposit amount is configured");
   dialogs.expectNext(data.expectedMessages.invalidAmount);
   await transactionPage.submitTransaction("deposit", amount);
   await transactionPage.expectError(data.expectedMessages.invalidAmount);
 });
 
-When("a Branch Manager opens the deposit page", async ({ customerPage, dialogs }) => {
+When("a Branch Manager attempts to open the deposit page", async ({ customerPage, dialogs }) => {
   await customerPage.expectLoaded();
   dialogs.expectNext(data.expectedMessages.tellerRequired);
   await customerPage.goToTransactionPage();
 });
 
-Then("the transaction is blocked for a non-Teller", async ({ transactionPage }) => {
+Then("the application prevents the transaction", async ({ transactionPage }) => {
   await expect(transactionPage.submitButton).toBeDisabled();
   await transactionPage.expectError(data.expectedMessages.tellerRequired);
 });

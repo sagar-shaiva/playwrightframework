@@ -100,7 +100,7 @@ npm run test:customer-transactions
 ### POM and BDD
 
 POM commands such as `npm run test:training-FJ` and BDD commands such as
-`npm run bdd:training-FJ` both use `playwright.config.ts`. The `framework=bdd` flag selects the BDD
+`npm run bdd:training-FJ` both use `playwright.config.ts`. The `FRAMEWORK=bdd` flag selects the BDD
 projects; without it, the POM projects are selected. BDD commands run their own branch-open,
 per-user auth, and branch-close feature projects; they do not depend on POM setup projects. BDD
 logs in and saves a session for each configured role, then customer-create, deposit, and withdrawal
@@ -109,9 +109,9 @@ open the browser, for example `npm run bdd:training-FJ:headed`; commands without
 headless.
 
 Numbered `.feature` and `features/steps/` files reuse the same page objects and JSON test data. Each
-feature and step pair has a matching numeric prefix and `@bddNN` tag to scope definitions. Indexed
-reason/amount scenario tags select JSON entries without Examples tables, so the HTML report includes
-one case per POM test while keeping test values in JSON.
+feature and step pair has a matching numeric prefix and `@bddNN` tag to scope definitions. Each BDD
+scenario reads its test values from the same JSON data used by the POM tests, so the HTML report
+includes one case per POM test while keeping business data out of feature tags.
 
 Authenticated BDD scenarios use the same states saved by `tests/02-auth.setup.ts`: tag scenarios
 with `@auth-SU`, `@auth-T`, `@auth-BM`, or another configured role. BDD projects depend on the
@@ -120,7 +120,9 @@ BDD HTML and JSON reports are written under `bdd-html` and `bdd-results`; POM re
 `html` and `results`.
 
 Use the same environment and country matrix for both lanes: `test:<env>-<country>` for POM and
-`bdd:<env>-<country>` for BDD, with `:headed` variants for either lane.
+`bdd:<env>-<country>` for BDD, with `:headed` variants for either lane. Each BDD command runs
+generation and execution directly, for example `npm run bdd:training-FJ` or
+`npm run bdd:training-FJ:headed`.
 
 ### Dependent workflows
 
@@ -143,7 +145,7 @@ BDD: branch-open -> auth -> customer-create -> customer-deposit -> customer-with
 6. The `branch-close` teardown signs in as SU and closes the branch after all branches finish.
 
 The producer stores its generated ID under its test name in
-`runtime-data/<env>/<country>.json`. Runtime data is git-ignored. The `UI:` step checks the screen; the `DB:` step then runs a read-only,
+`runtime-data/<env>/<country>/<date>/runtime.json`. Runtime data is git-ignored. The `UI:` step checks the screen; the `DB:` step then runs a read-only,
 parameterized `SELECT` through the `db` fixture, so data is asserted at the moment it is produced.
 The DB step is skipped when DB credentials are absent. The branch teardown runs after its dependent
 projects complete, including when a middle project fails and downstream projects are skipped.

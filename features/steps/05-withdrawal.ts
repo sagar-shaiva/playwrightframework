@@ -9,35 +9,37 @@ const { Given, When, Then } = createBdd(test, { tags: "@bdd05" });
 let transactionId = "";
 let balanceAfterWithdrawal = 0;
 
-Given("the Teller session is active", async ({ customerPage }) => {
+Given("I am signed in as the Teller", async ({ customerPage }) => {
   await customerPage.expectLoaded();
   await customerPage.expectLoggedInAs(data.userIds.T);
 });
 
-When("the Teller withdraws the configured amount from the BDD customer", async ({ customerPage, transactionPage, dialogs }) => {
+When("I withdraw the configured amount from the customer created in this workflow", async ({ customerPage, transactionPage, dialogs }) => {
   const flow = data.generatedCustomerFlow;
   const customerId = getRuntimeData<string>("bddCustomerId");
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(customerId);
   await customerPage.expectCustomerFound(flow.name);
+  expect(await customerPage.getBalance()).toBe(flow.openingBalance + flow.depositAmount);
   await customerPage.goToTransactionPage();
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("withdraw", flow.withdrawalAmount, flow.withdrawalReason);
   await transactionPage.expectSuccess();
+  await expect(transactionPage.transactionId).toHaveText(/^\d+$/);
   transactionId = (await transactionPage.transactionId.textContent()) ?? "";
   balanceAfterWithdrawal = flow.openingBalance + flow.depositAmount - flow.withdrawalAmount;
   saveRuntimeData(test.info(), "bddWithdrawalTransactionId", transactionId);
 });
 
-Then("the customer balance reflects the withdrawal", async ({ transactionPage }) => {
+Then("the customer's balance reflects the withdrawal", async ({ transactionPage }) => {
   expect(await transactionPage.getBalance()).toBe(balanceAfterWithdrawal);
 });
 
-Then("the withdrawal is stored in the database when available", async ({ db }) => {
+Then("the withdrawal is saved in the database when database checks are enabled", async ({ db }) => {
   if (!Database.isAvailable()) return;
   const customerId = getRuntimeData<string>("bddCustomerId");
   const rows = await db.query<TransactionRow>(
-    `SELECT TransactionId, TransactionType, Amount, BalanceBefore, BalanceAfter, Reason, CreatedBy
+    `SELECT TransactionId, TransactionType, Amount, BalanceBefore, BalanceAfter, Reason, TransactionDateTime, CreatedBy
      FROM dbo.Transactions WHERE TransactionId = @transactionId AND CustomerId = @customerId`,
     { transactionId: Number(transactionId), customerId },
   );
@@ -49,40 +51,43 @@ Then("the withdrawal is stored in the database when available", async ({ db }) =
     CreatedBy: data.userIds.T,
   });
   expect(Number(rows[0].Amount)).toBe(data.generatedCustomerFlow.withdrawalAmount);
+  expect(Number(rows[0].BalanceBefore)).toBe(data.generatedCustomerFlow.openingBalance + data.generatedCustomerFlow.depositAmount);
   expect(Number(rows[0].BalanceAfter)).toBe(balanceAfterWithdrawal);
+  expect(rows[0].TransactionDateTime).toBeInstanceOf(Date);
   const customerRows = await db.query<CustomerBalanceRow>("SELECT Balance FROM dbo.Customers WHERE CustomerId = @customerId", { customerId });
+  expect(customerRows).toHaveLength(1);
   expect(Number(customerRows[0].Balance)).toBe(balanceAfterWithdrawal);
 });
 
-When("the Teller submits a withdrawal without selecting a customer", async ({ customerPage, transactionPage, dialogs }) => {
+When("I submit a withdrawal without selecting a customer", async ({ customerPage, transactionPage, dialogs }) => {
   await customerPage.expectLoaded();
   await customerPage.goToTransactionPage();
   dialogs.expectNext(data.expectedMessages.customerRequired);
   await transactionPage.submitTransaction("withdraw", data.transactions.unselectedCustomerAmount);
 });
 
-Then("the customer selection error is shown", async ({ transactionPage }) => {
+Then("the customer selection error is displayed", async ({ transactionPage }) => {
   await transactionPage.expectError(data.expectedMessages.customerRequired);
 });
 
-When("the Teller opens withdrawal reasons for a known customer", async ({ customerPage, transactionPage }) => {
+When("I view the withdrawal reasons for a known customer", async ({ customerPage, transactionPage }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
   await customerPage.goToTransactionPage();
   await transactionPage.type.selectOption("withdraw");
 });
 
-Then("only configured withdrawal reasons are available", async ({ transactionPage }) => {
+Then("the available reasons match the configured withdrawal reasons", async ({ transactionPage }) => {
   await transactionPage.expectReasons(data.transactions.withdraw.reasons);
 });
 
-When("the Teller prepares a withdrawal from an existing customer", async ({ customerPage }) => {
+When("I prepare a withdrawal from an existing customer", async ({ customerPage }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
   await customerPage.goToTransactionPage();
 });
 
-Then("the configured withdrawal decreases the balance", async ({ transactionPage, dialogs }) => {
+Then("the configured withdrawal completes and the expected balance is displayed", async ({ transactionPage, dialogs }) => {
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("withdraw", data.transactions.withdraw.amount, data.transactions.withdraw.reason);
   await transactionPage.expectSuccess();
@@ -91,7 +96,6 @@ Then("the configured withdrawal decreases the balance", async ({ transactionPage
 
 Then("the first configured withdrawal reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.withdraw.reasons[0];
-  if (!reason) throw new Error("No withdrawal reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("withdraw", data.transactions.withdraw.amount, reason);
   await transactionPage.expectSuccess();
@@ -100,7 +104,6 @@ Then("the first configured withdrawal reason is accepted", async ({ transactionP
 
 Then("the second configured withdrawal reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.withdraw.reasons[1];
-  if (!reason) throw new Error("No second withdrawal reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("withdraw", data.transactions.withdraw.amount, reason);
   await transactionPage.expectSuccess();
@@ -109,7 +112,6 @@ Then("the second configured withdrawal reason is accepted", async ({ transaction
 
 Then("the third configured withdrawal reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.withdraw.reasons[2];
-  if (!reason) throw new Error("No third withdrawal reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("withdraw", data.transactions.withdraw.amount, reason);
   await transactionPage.expectSuccess();
@@ -118,7 +120,6 @@ Then("the third configured withdrawal reason is accepted", async ({ transactionP
 
 Then("the fourth configured withdrawal reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.withdraw.reasons[3];
-  if (!reason) throw new Error("No fourth withdrawal reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("withdraw", data.transactions.withdraw.amount, reason);
   await transactionPage.expectSuccess();
@@ -127,14 +128,13 @@ Then("the fourth configured withdrawal reason is accepted", async ({ transaction
 
 Then("the fifth configured withdrawal reason is accepted", async ({ transactionPage, dialogs }) => {
   const reason = data.transactions.withdraw.reasons[4];
-  if (!reason) throw new Error("No fifth withdrawal reason is configured");
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("withdraw", data.transactions.withdraw.amount, reason);
   await transactionPage.expectSuccess();
   await transactionPage.expectSelectedReason(reason);
 });
 
-When("the Teller prepares the withdrawal form for amount checks", async ({ customerPage, transactionPage }) => {
+When("I prepare the withdrawal form for amount checks", async ({ customerPage, transactionPage }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
   await customerPage.goToTransactionPage();
@@ -142,7 +142,6 @@ When("the Teller prepares the withdrawal form for amount checks", async ({ custo
 
 Then("the first configured invalid withdrawal amount is rejected", async ({ transactionPage, dialogs }) => {
   const amount = data.transactions.invalidAmounts[0];
-  if (amount === undefined) throw new Error("No invalid withdrawal amount is configured");
   dialogs.expectNext(data.expectedMessages.invalidAmount);
   await transactionPage.submitTransaction("withdraw", amount);
   await transactionPage.expectError(data.expectedMessages.invalidAmount);
@@ -150,17 +149,16 @@ Then("the first configured invalid withdrawal amount is rejected", async ({ tran
 
 Then("the second configured invalid withdrawal amount is rejected", async ({ transactionPage, dialogs }) => {
   const amount = data.transactions.invalidAmounts[1];
-  if (amount === undefined) throw new Error("No second invalid withdrawal amount is configured");
   dialogs.expectNext(data.expectedMessages.invalidAmount);
   await transactionPage.submitTransaction("withdraw", amount);
   await transactionPage.expectError(data.expectedMessages.invalidAmount);
 });
 
-Then("the insufficient funds message is shown", async ({ transactionPage }) => {
+Then("an insufficient funds message is displayed", async ({ transactionPage }) => {
   await transactionPage.expectError(data.expectedMessages.insufficientFunds);
 });
 
-When("the Teller submits a withdrawal above the balance", async ({ customerPage, transactionPage, dialogs }) => {
+When("I submit a withdrawal above the available balance", async ({ customerPage, transactionPage, dialogs }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
   await customerPage.goToTransactionPage();
@@ -168,19 +166,19 @@ When("the Teller submits a withdrawal above the balance", async ({ customerPage,
   await transactionPage.submitTransaction("withdraw", data.transactions.overdraft.amount);
 });
 
-When("the Teller submits a withdrawal one cent above the balance", async ({ customerPage, transactionPage, dialogs }) => {
+When("I submit a withdrawal one cent above the available balance", async ({ customerPage, transactionPage, dialogs }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
-  const amount = (await customerPage.getBalance()) + data.transactions.withdraw.overBalanceIncrement;
+  const amount = data.customers.valid.balance + data.transactions.withdraw.overBalanceIncrement;
   await customerPage.goToTransactionPage();
   dialogs.expectNext(data.expectedMessages.insufficientFunds);
   await transactionPage.submitTransaction("withdraw", amount);
 });
 
-When("the Teller withdraws the available balance", async ({ customerPage, transactionPage, dialogs }) => {
+When("I withdraw the available balance", async ({ customerPage, transactionPage, dialogs }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
-  const balance = await customerPage.getBalance();
+  const balance = data.customers.valid.balance;
   await customerPage.goToTransactionPage();
   dialogs.expectNext(data.expectedMessages.transactionSuccess);
   await transactionPage.submitTransaction("withdraw", balance);

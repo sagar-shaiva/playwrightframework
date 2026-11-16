@@ -1,26 +1,26 @@
 @bdd @bdd07
-Feature: Manually sign in to the teller portal
+Feature: Manual sign-in
 
   @noauth
-  Scenario: Teller logs in manually
-    Given the manual login form is open
-    When the Teller logs in manually
-    Then the Teller dashboard is shown
+  Scenario: Teller signs in successfully
+    Given the login form is displayed
+    When I sign in as the Teller
+    Then I am authenticated as the Teller
 
   @noauth
-  Scenario: Branch Manager logs in manually
-    Given the manual login form is open
-    When the Branch Manager logs in manually
-    Then the Branch Manager dashboard is shown
+  Scenario: Branch Manager signs in successfully
+    Given the login form is displayed
+    When I sign in as the Branch Manager
+    Then I am authenticated as the Branch Manager
 
   @noauth
   Scenario: Teller can sign out
-    Given the manual login form is open
-    When the Teller signs in and signs out
-    Then the login form is available again
+    Given the login form is displayed
+    When I sign in as the Teller and then sign out
+    Then the login form is displayed again
 
   @noauth
-  Scenario: Incorrect password is rejected
-    Given the manual login form is open
-    When the Teller submits an incorrect password
-    Then the invalid password message is shown
+  Scenario: An incorrect password is rejected
+    Given the login form is displayed
+    When I submit an incorrect password as the Teller
+    Then the invalid password message is displayed

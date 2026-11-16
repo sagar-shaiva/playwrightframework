@@ -9,14 +9,14 @@ const { Given, When, Then } = createBdd(test, { tags: "@bdd09" });
 let statementPopup: Page | undefined;
 let statementFilePath = "";
 
-Given("statement actions are available for the configured customer", async ({ customerPage }) => {
+Given("the configured customer is selected and statement actions are available", async ({ customerPage }) => {
   await customerPage.expectLoaded();
   await customerPage.searchCustomer(data.customers.valid.id);
   await customerPage.expectCustomerFound(data.customers.valid.name);
   await customerPage.expectStatementActionsVisible();
 });
 
-When("the Teller opens the customer statement", async ({ customerPage, context }) => {
+When("I open the customer's statement", async ({ customerPage, context }) => {
   const { popup, pdfUrl } = await customerPage.openStatement();
   expect(popup.context()).toBe(context);
   const response = await popup.request.get(pdfUrl);
@@ -32,8 +32,9 @@ Then("the statement is a PDF in the same browser context", async ({ context }) =
   await statementPopup.close();
 });
 
-When("the Teller downloads the customer statement", async ({ customerPage }) => {
+When("I download the customer's statement", async ({ customerPage }) => {
   const download = await customerPage.downloadStatementPdf();
+  expect(download.suggestedFilename()).toBe(`statement-${data.customers.valid.id}.pdf`);
   statementFilePath = await saveBrowserDownload(download);
 });
 
@@ -41,7 +42,7 @@ Then("the downloaded file is a PDF", async () => {
   expect(fs.readFileSync(statementFilePath).subarray(0, 5).toString()).toBe("%PDF-");
 });
 
-When("the Teller opens Print to PDF", async ({ customerPage, context }) => {
+When("I open Print to PDF", async ({ customerPage, context }) => {
   const { popup, pdfUrl } = await customerPage.openPrintToPdf();
   expect(popup.context()).toBe(context);
   const response = await popup.request.get(pdfUrl);
@@ -57,7 +58,7 @@ Then("the print-to-PDF response is a PDF in the same context", async ({ context 
   await statementPopup.close();
 });
 
-When("the Teller opens the print preview", async ({ customerPage, context }) => {
+When("I open the print preview", async ({ customerPage, context }) => {
   await context.addInitScript(() => {
     window.print = () => {};
     window.close = () => {};
@@ -67,7 +68,7 @@ When("the Teller opens the print preview", async ({ customerPage, context }) => 
   statementFilePath = await generatePdfFromPage(statementPopup, `bdd-print-preview-${data.customers.valid.id}.pdf`);
 });
 
-When("the Teller opens the print preview without auto-close", async ({ customerPage, context }) => {
+When("I open the print preview without automatic closing", async ({ customerPage, context }) => {
   await context.addInitScript(() => {
     window.print = () => {};
   });

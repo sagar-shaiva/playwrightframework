@@ -12,5 +12,5 @@ node_modules/
 /reports/
 /auth/
 /runtime-data/
-.env
-dist/
+/allure-report/
+/allure-results/

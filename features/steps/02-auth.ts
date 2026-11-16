@@ -7,7 +7,7 @@ import { getAuthFile } from "../../config/env.config";
 
 const { When } = createBdd(test, { tags: "@bdd02" });
 
-When("the configured user signs in and saves their session", async ({ page, loginPage, customerPage, $tags }) => {
+When("the configured user signs in and their session is saved", async ({ page, loginPage, customerPage, $tags }) => {
   const loginTag = $tags.find((tag) => tag.startsWith("@login-"));
   const role = loginTag?.slice("@login-".length) as keyof typeof data.userIds | undefined;
   const userId = role ? data.userIds[role] : undefined;

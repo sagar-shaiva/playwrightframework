@@ -4,41 +4,49 @@ import { data } from "../../config/env.config";
 
 const { Given, When, Then } = createBdd(test, { tags: "@bdd07" });
 
-Given("the manual login form is open", async ({ loginPage }) => {
+Given("the login form is displayed", async ({ loginPage }) => {
   await loginPage.expectLoaded();
 });
 
-When("the Teller logs in manually", async ({ loginPage }) => {
+When("I sign in as the Teller", async ({ loginPage, takeScreenshot }) => {
+  await takeScreenshot("01.loginpage");
   await loginPage.login(data.userIds.T, data.password);
 });
 
-Then("the Teller dashboard is shown", async ({ customerPage }) => {
+Then("I am authenticated as the Teller", async ({ customerPage, takeScreenshot }) => {
   await customerPage.expectLoggedInAs(data.userIds.T);
+  await takeScreenshot("02.dashboardpage");
 });
 
-When("the Branch Manager logs in manually", async ({ loginPage }) => {
+When("I sign in as the Branch Manager", async ({ loginPage, takeScreenshot }) => {
+  await takeScreenshot("01.loginpage");
   await loginPage.login(data.userIds.BM, data.password);
 });
 
-Then("the Branch Manager dashboard is shown", async ({ customerPage }) => {
+Then("I am authenticated as the Branch Manager", async ({ customerPage, takeScreenshot }) => {
   await customerPage.expectLoggedInAs(data.userIds.BM);
+  await takeScreenshot("02.dashboardpage");
 });
 
-When("the Teller signs in and signs out", async ({ loginPage, customerPage }) => {
+When("I sign in as the Teller and then sign out", async ({ loginPage, customerPage, takeScreenshot }) => {
   await loginPage.login(data.userIds.T, data.password);
   await customerPage.expectLoggedInAs(data.userIds.T);
+  await takeScreenshot("01.dashboardpage");
   await customerPage.logout();
+  await takeScreenshot("02.loginpage-after-logout");
 });
 
-Then("the login form is available again", async ({ loginPage }) => {
+Then("the login form is displayed again", async ({ loginPage }) => {
   await loginPage.expectLoaded();
 });
 
-When("the Teller submits an incorrect password", async ({ loginPage, dialogs }) => {
+When("I submit an incorrect password as the Teller", async ({ loginPage, dialogs, takeScreenshot }) => {
+  await takeScreenshot("01.loginpage");
   dialogs.expectNext(data.expectedMessages.invalidPassword);
   await loginPage.login(data.userIds.T, data.loginNegative.wrongPassword.password);
 });
 
-Then("the invalid password message is shown", async ({ loginPage }) => {
+Then("the invalid password message is displayed", async ({ loginPage, takeScreenshot }) => {
   await loginPage.expectError(data.expectedMessages.invalidPassword);
+  await takeScreenshot("02.invalid-password-error");
 });

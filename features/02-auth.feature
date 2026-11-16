@@ -1,47 +1,47 @@
 @bdd @bdd02
-Feature: Authenticate configured teller users
+Feature: User authentication
 
   @noauth
   @login-SU
-  Scenario: Save Super User session
-    When the configured user signs in and saves their session
+  Scenario: Super User signs in successfully
+    When the configured user signs in and their session is saved
 
   @noauth
   @login-BM
-  Scenario: Save Branch Manager session
-    When the configured user signs in and saves their session
+  Scenario: Branch Manager signs in successfully
+    When the configured user signs in and their session is saved
 
   @noauth
   @login-BS
-  Scenario: Save Branch Supervisor session
-    When the configured user signs in and saves their session
+  Scenario: Branch Supervisor signs in successfully
+    When the configured user signs in and their session is saved
 
   @noauth
   @login-BO
-  Scenario: Save Back Office session
-    When the configured user signs in and saves their session
+  Scenario: Back Office user signs in successfully
+    When the configured user signs in and their session is saved
 
   @noauth
   @login-E
-  Scenario: Save Enquiry session
-    When the configured user signs in and saves their session
+  Scenario: Enquiry user signs in successfully
+    When the configured user signs in and their session is saved
 
   @noauth
   @login-L
-  Scenario: Save Loan Officer session
-    When the configured user signs in and saves their session
+  Scenario: Loan Officer signs in successfully
+    When the configured user signs in and their session is saved
 
   @noauth
   @login-LM
-  Scenario: Save Loan Manager session
-    When the configured user signs in and saves their session
+  Scenario: Loan Manager signs in successfully
+    When the configured user signs in and their session is saved
 
   @noauth
   @login-MG
-  Scenario: Save Manager session
-    When the configured user signs in and saves their session
+  Scenario: Manager signs in successfully
+    When the configured user signs in and their session is saved
 
   @noauth
   @login-T
-  Scenario: Save Teller session
-    When the configured user signs in and saves their session
+  Scenario: Teller signs in successfully
+    When the configured user signs in and their session is saved

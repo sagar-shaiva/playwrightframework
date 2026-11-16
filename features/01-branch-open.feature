@@ -1,8 +1,8 @@
 @bdd @bdd01
-Feature: Open the branch before teller workflows
+Feature: Branch management
 
   @noauth
-  Scenario: Super User opens the branch
-    Given the Super User signs in
+  Scenario: A Super User opens the branch
+    Given the Super User is signed in
     When the Super User opens the branch
-    Then the branch status is open
+    Then the branch is open

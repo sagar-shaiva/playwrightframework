@@ -4,7 +4,7 @@ import { data } from "../../config/env.config";
 
 const { Given, When, Then } = createBdd(test, { tags: "@bdd11" });
 
-Given("the user-specific dashboard is open as a Branch Manager", async ({ customerPage }) => {
+Given("the Branch Manager dashboard is displayed", async ({ customerPage }) => {
   await customerPage.expectLoaded();
 });
 
@@ -12,11 +12,11 @@ Then("the dashboard identifies the Branch Manager", async ({ customerPage }) => 
   await customerPage.expectLoggedInAs(data.userIds.BM);
 });
 
-Given("the user-specific dashboard is open as a Manager", async ({ customerPage }) => {
+Given("the Manager dashboard is displayed", async ({ customerPage }) => {
   await customerPage.expectLoaded();
 });
 
-When("the Manager opens transactions", async ({ customerPage }) => {
+When("I open the transactions page", async ({ customerPage }) => {
   await customerPage.goToTransactionPage();
 });
 

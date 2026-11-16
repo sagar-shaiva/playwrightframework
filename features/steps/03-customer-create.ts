@@ -8,22 +8,22 @@ import type { CustomerRow } from "../../src/types/database.types";
 const { Given, When, Then } = createBdd(test, { tags: "@bdd03" });
 let customerId = "";
 
-Given("the Super User session is active", async ({ customerPage }) => {
+Given("I am signed in as the Super User", async ({ customerPage }) => {
   await customerPage.expectLoaded();
   await customerPage.expectLoggedInAs(data.userIds.SU);
 });
 
-When("the Super User creates the configured customer", async ({ customerPage }) => {
+When("I create the configured customer", async ({ customerPage }) => {
   const flow = data.generatedCustomerFlow;
   customerId = await customerPage.createCustomer(flow.name, flow.type, flow.openingBalance);
   saveRuntimeData(test.info(), "bddCustomerId", customerId);
 });
 
-Then("the new customer is saved for later BDD scenarios", async ({ customerPage }) => {
+Then("the customer is available to later BDD scenarios", async ({ customerPage }) => {
   await expect(customerPage.customerName).toContainText(customerId);
 });
 
-Then("the customer is stored in the database when available", async ({ db }) => {
+Then("the customer is saved in the database when database checks are enabled", async ({ db }) => {
   if (!Database.isAvailable()) return;
   const flow = data.generatedCustomerFlow;
   const rows = await db.query<CustomerRow>(`SELECT CustomerId, CustomerName, CustomerType, Balance FROM dbo.Customers WHERE CustomerId = @customerId`, { customerId });

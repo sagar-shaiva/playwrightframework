@@ -2,9 +2,10 @@ import * as fs from "fs";
 import * as path from "path";
 import type { TestInfo } from "@playwright/test";
 import { COUNTRY, ENV } from "../../config/env.config";
+import { getDateFolder } from "./dateHelper";
 import type { RuntimeDataStore } from "../types/runtimeData.types";
 
-const runtimeFile = path.resolve(process.cwd(), "runtime-data", ENV, `${COUNTRY}.json`);
+const runtimeFile = path.resolve(process.cwd(), "runtime-data", ENV, COUNTRY, getDateFolder(), "runtime.json");
 
 function readRuntimeData(): RuntimeDataStore {
   if (!fs.existsSync(runtimeFile)) return {};

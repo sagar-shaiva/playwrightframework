@@ -1,20 +1,19 @@
 @bdd @bdd06
-Feature: Handle application dialogs
+Feature: Application dialogs
 
   @noauth
-  Scenario: Invalid password dialog is accepted and reported
-    Given the dialog login form is open
-    When the user submits an invalid password
-    Then the invalid password message is shown
+  Scenario: An invalid password displays an error dialog
+    Given the login form is displayed
+    When I submit an invalid password
+    Then the invalid password message is displayed
 
   @auth-T
-  Scenario: Successful transaction dialog is accepted and reported
-    Given the Teller session is active
-    When the Teller completes a successful deposit
-    Then the transaction success message is shown
+  Scenario: A successful deposit displays a confirmation dialog
+    Given I am signed in as the Teller
+    When I complete a successful deposit
+    Then the transaction success message is displayed
 
   @auth-T
-  Scenario: Unexpected service failure is reported
-    Given the Teller session is active
-    When the application reports a service failure
-    Then the BDD scenario completes with the dialog handled
+  Scenario: An unexpected service failure is handled
+    Given I am signed in as the Teller
+    When the application displays a service failure

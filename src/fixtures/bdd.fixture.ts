@@ -7,6 +7,7 @@ import { LaunchPage } from "../pages/LaunchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { CustomerPage } from "../pages/CustomerPage";
 import { TransactionPage } from "../pages/TransactionPage";
+import { BranchPage } from "../pages/BranchPage";
 import { Database } from "../utils/database";
 import { DialogHandler } from "../utils/dialogHandler";
 import { getDateFolder, getFileTimestamp } from "../utils/dateHelper";
@@ -16,6 +17,7 @@ type PageFixtures = {
   loginPage: LoginPage;
   customerPage: CustomerPage;
   transactionPage: TransactionPage;
+  branchPage: BranchPage;
 };
 
 type DbFixtures = {
@@ -50,6 +52,9 @@ const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFix
   },
   transactionPage: async ({ appPage }, use) => {
     await use(new TransactionPage(appPage));
+  },
+  branchPage: async ({ appPage }, use) => {
+    await use(new BranchPage(appPage));
   },
   takeScreenshot: async ({ appPage }, use, testInfo) => {
     await use(async (name, targetPage = appPage) => {
