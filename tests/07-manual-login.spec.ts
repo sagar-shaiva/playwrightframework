@@ -1,41 +1,36 @@
 import { test } from "../src/fixtures/test.fixtures";
-import { data } from "../config/env.config";
 
-test.describe("Manual login", () => {
-  test("Teller logs in manually", async ({ loginPage, customerPage, takeScreenshot }) => {
+test.describe("Manual sign-in", () => {
+  for (const role of ["teller", "branchManager"]) {
+    test(`"${role}" signs in from the login form`, async ({ loginPage, customerPage, takeScreenshot, testData }) => {
+      await loginPage.expectLoaded();
+      await takeScreenshot("01.loginpage");
+
+      await loginPage.login(testData.users[role], testData.password);
+
+      await customerPage.expectLoggedInAs(testData.users[role]);
+      await takeScreenshot("02.dashboardpage");
+    });
+  }
+
+  test("The Teller signs out and returns to the login form", async ({ loginPage, customerPage, takeScreenshot, testData }) => {
     await loginPage.expectLoaded();
-    await takeScreenshot("01.loginpage");
-    await loginPage.login(data.userIds.T, data.password);
-
-    await customerPage.expectLoggedInAs(data.userIds.T);
-    await takeScreenshot("02.dashboardpage");
-  });
-
-  test("Branch Manager logs in manually", async ({ loginPage, customerPage, takeScreenshot }) => {
-    await loginPage.expectLoaded();
-    await takeScreenshot("01.loginpage");
-    await loginPage.login(data.userIds.BM, data.password);
-
-    await customerPage.expectLoggedInAs(data.userIds.BM);
-    await takeScreenshot("02.dashboardpage");
-  });
-
-  test("Teller logs out and returns to login", async ({ loginPage, customerPage, takeScreenshot }) => {
-    await loginPage.expectLoaded();
-    await loginPage.login(data.userIds.T, data.password);
-    await customerPage.expectLoggedInAs(data.userIds.T);
-    await takeScreenshot("01.dashboardpage");
+    await loginPage.login(testData.users.teller, testData.password);
+    await customerPage.expectLoggedInAs(testData.users.teller);
 
     await customerPage.logout();
+
+    await loginPage.expectLoaded();
     await takeScreenshot("02.loginpage-after-logout");
   });
 
-  test("rejects an incorrect password", async ({ loginPage, dialogs, takeScreenshot }) => {
+  test("A wrong password is rejected", async ({ loginPage, dialogs, takeScreenshot, testData }) => {
     await loginPage.expectLoaded();
-    await takeScreenshot("01.loginpage");
-    dialogs.expectNext(data.expectedMessages.invalidPassword);
-    await loginPage.login(data.userIds.T, data.loginNegative.wrongPassword.password);
-    await loginPage.expectError(data.expectedMessages.invalidPassword);
+
+    await loginPage.login(testData.users.teller, testData.invalidPasswords.wrongPassword);
+
+    await dialogs.expectShown(testData.messages.invalidPassword);
+    await loginPage.expectError(testData.messages.invalidPassword);
     await takeScreenshot("02.invalid-password-error");
   });
 });

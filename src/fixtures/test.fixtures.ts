@@ -1,7 +1,8 @@
 import { Page, expect, test as base } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
-import { COUNTRY, ENV, getAuthFile } from "../../config/env.config";
+import { COUNTRY, ENV, data, getAuthFile } from "../../config/env.config";
+import type { TestData } from "../schemas/test-data.schema";
 import { LaunchPage } from "../pages/LaunchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { CustomerPage } from "../pages/CustomerPage";
@@ -27,8 +28,13 @@ type DialogFixtures = {
   dialogs: DialogHandler;
 };
 
+type DataFixtures = {
+  testData: TestData;
+};
+
 type AuthFixtures = {
-  asUser: (userId: string) => Promise<CustomerPage>;
+  authRole: string | undefined;
+  asUser: (role: string) => Promise<CustomerPage>;
 };
 
 type ScreenshotFixtures = {
@@ -37,7 +43,11 @@ type ScreenshotFixtures = {
 
 const emptyStorageState = { cookies: [], origins: [] };
 
-const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFixtures & ScreenshotFixtures>({
+/** POM tests start logged out unless they select a role with test.use({ authRole: "teller" }). */
+export const test = base.extend<PageFixtures & DbFixtures & DialogFixtures & DataFixtures & AuthFixtures & ScreenshotFixtures>({
+  testData: async ({}, use) => {
+    await use(data);
+  },
   appPage: async ({ page }, use) => {
     const launchPage = new LaunchPage(page);
     const appPage = await launchPage.openLoginPopup();
@@ -69,44 +79,31 @@ const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFix
   dialogs: [
     async ({ appPage }, use) => {
       const dialogs = new DialogHandler(appPage);
-      try {
-        await use(dialogs);
-      } finally {
-        dialogs.dispose();
-        dialogs.printUnexpectedMessages();
-        dialogs.verifyExpectedDialogs();
-      }
+      await use(dialogs);
+      dialogs.dispose();
+      dialogs.printUnexpectedMessages();
     },
     { auto: true },
   ],
-  asUser: async ({ browser }, use) => {
+  authRole: [undefined, { option: true }],
+  storageState: async ({ authRole, testData }, use) => {
+    await use(authRole ? getAuthFile(testData.users[authRole]) : emptyStorageState);
+  },
+  asUser: async ({ browser, testData }, use) => {
     const sessions: { page: Page; dialogs: DialogHandler }[] = [];
 
-    await use(async (userId) => {
-      const page = await browser.newPage({ storageState: getAuthFile(userId) });
+    await use(async (role) => {
+      const page = await browser.newPage({ storageState: getAuthFile(testData.users[role]) });
       const launchPage = new LaunchPage(page);
       const appPage = await launchPage.openLoginPopup();
       sessions.push({ page, dialogs: new DialogHandler(appPage) });
       return new CustomerPage(appPage);
     });
 
-    const dialogErrors: string[] = [];
-
     for (const { page, dialogs } of sessions) {
       dialogs.dispose();
       dialogs.printUnexpectedMessages();
-
-      try {
-        dialogs.verifyExpectedDialogs();
-      } catch (error) {
-        dialogErrors.push(String(error));
-      } finally {
-        await page.close();
-      }
-    }
-
-    if (dialogErrors.length > 0) {
-      throw new Error(dialogErrors.join("\n"));
+      await page.close();
     }
   },
   db: async ({}, use) => {
@@ -115,8 +112,5 @@ const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFix
     await db.close();
   },
 });
-
-/** POM tests start logged out unless the spec explicitly selects an auth file. */
-export const test = appTest.extend({ storageState: emptyStorageState });
 
 export { expect };

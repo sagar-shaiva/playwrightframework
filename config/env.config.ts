@@ -42,7 +42,7 @@ if (!fs.existsSync(DATA_FILE)) {
   throw new Error(`Data file not found: ${DATA_FILE}`);
 }
 
-/** Specs import this object directly: data.userIds.T, data.customers, etc. */
+/** Validated test data. Specs and steps read it through the `testData` fixture; setup files import it directly. */
 const testDataResult = testDataSchema.safeParse(JSON.parse(fs.readFileSync(DATA_FILE, "utf-8")));
 
 if (!testDataResult.success) {
@@ -61,7 +61,7 @@ export function getAppUrl() {
   return url;
 }
 
-/** Saved authentication file for an actual user ID from data.userIds. */
+/** Saved authentication file for a user ID from data.users. */
 export function getAuthFile(userId: string): string {
   return path.resolve(__dirname, "..", "auth", ENV, `${userId}.json`);
 }

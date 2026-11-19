@@ -1,55 +1,31 @@
-import { Dialog, Page } from "@playwright/test";
+import { Dialog, Page, expect } from "@playwright/test";
 
+/** Accepts every browser dialog so the app never blocks, and records the messages for assertions. */
 export class DialogHandler {
-  private expectedMessage: string | undefined;
-  private readonly expectedDialogErrors: string[] = [];
-  private readonly unexpectedMessages: string[] = [];
+  private readonly messages: string[] = [];
 
   constructor(private readonly page: Page) {
-    page.on("dialog", this.acceptUnexpectedDialog);
+    page.on("dialog", this.accept);
   }
 
-  expectNext(message: string) {
-    if (this.expectedMessage) {
-      throw new Error(`Still waiting for expected dialog: ${this.expectedMessage}`);
-    }
-
-    this.expectedMessage = message;
+  /** Waits until a dialog with this exact message has been shown. */
+  async expectShown(message: string) {
+    await expect.poll(() => this.messages, { message: `Expected dialog "${message}"` }).toContain(message);
+    this.messages.splice(this.messages.indexOf(message), 1);
   }
 
   printUnexpectedMessages() {
-    if (this.unexpectedMessages.length > 0) {
-      console.info("Unexpected application dialog(s):", this.unexpectedMessages.join(" | "));
-    }
-  }
-
-  verifyExpectedDialogs() {
-    if (this.expectedMessage) {
-      this.expectedDialogErrors.push(`Expected dialog did not appear: "${this.expectedMessage}"`);
-    }
-
-    if (this.expectedDialogErrors.length > 0) {
-      throw new Error(this.expectedDialogErrors.join("\n"));
+    if (this.messages.length > 0) {
+      console.info("Unexpected application dialog(s):", this.messages.join(" | "));
     }
   }
 
   dispose() {
-    this.page.off("dialog", this.acceptUnexpectedDialog);
+    this.page.off("dialog", this.accept);
   }
 
-  private readonly acceptUnexpectedDialog = async (dialog: Dialog) => {
-    const actualMessage = dialog.message();
+  private readonly accept = async (dialog: Dialog) => {
+    this.messages.push(dialog.message());
     await dialog.accept();
-
-    if (this.expectedMessage) {
-      if (actualMessage !== this.expectedMessage) {
-        this.expectedDialogErrors.push(`Expected dialog "${this.expectedMessage}", received "${actualMessage}"`);
-      }
-
-      this.expectedMessage = undefined;
-      return;
-    }
-
-    this.unexpectedMessages.push(actualMessage);
   };
 }

@@ -1,47 +1,22 @@
 @bdd @bdd02
-Feature: User authentication
+Feature: User sessions
+  Every user signs in once and the session is saved, so later features start already signed in.
 
   @noauth
-  @login-SU
-  Scenario: Super User signs in successfully
-    When the configured user signs in and their session is saved
+  Scenario Outline: "<role>" signs in and the session is saved
+    Given I am on the login form
+    When I sign in as "<role>"
+    Then I am authenticated as "<role>"
+    And I save the session of "<role>"
 
-  @noauth
-  @login-BM
-  Scenario: Branch Manager signs in successfully
-    When the configured user signs in and their session is saved
-
-  @noauth
-  @login-BS
-  Scenario: Branch Supervisor signs in successfully
-    When the configured user signs in and their session is saved
-
-  @noauth
-  @login-BO
-  Scenario: Back Office user signs in successfully
-    When the configured user signs in and their session is saved
-
-  @noauth
-  @login-E
-  Scenario: Enquiry user signs in successfully
-    When the configured user signs in and their session is saved
-
-  @noauth
-  @login-L
-  Scenario: Loan Officer signs in successfully
-    When the configured user signs in and their session is saved
-
-  @noauth
-  @login-LM
-  Scenario: Loan Manager signs in successfully
-    When the configured user signs in and their session is saved
-
-  @noauth
-  @login-MG
-  Scenario: Manager signs in successfully
-    When the configured user signs in and their session is saved
-
-  @noauth
-  @login-T
-  Scenario: Teller signs in successfully
-    When the configured user signs in and their session is saved
+    Examples:
+      | role             |
+      | superUser        |
+      | branchManager    |
+      | branchSupervisor |
+      | backOffice       |
+      | enquiry          |
+      | loanOfficer      |
+      | loanManager      |
+      | manager          |
+      | teller           |

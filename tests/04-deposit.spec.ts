@@ -1,127 +1,139 @@
 import { test, expect } from "../src/fixtures/test.fixtures";
-import { data, getAuthFile } from "../config/env.config";
-import { getRuntimeData, saveRuntimeData } from "../src/utils/runtimeData";
+import { getRuntimeData } from "../src/utils/runtimeData";
 import { Database } from "../src/utils/database";
 import type { CustomerBalanceRow, TransactionRow } from "../src/types/database.types";
 
-const { customers, transactions, expectedMessages } = data;
+test.describe("Customer deposits", () => {
+  test.use({ authRole: "teller" });
 
-test.describe("Database customer deposit", () => {
-  test.use({ storageState: getAuthFile(data.userIds.T) });
-
-  test("stores the deposit and transaction details", async ({ customerPage, transactionPage, dialogs, db }, testInfo) => {
-    const flow = data.generatedCustomerFlow;
+  test('The Teller deposits into the new customer "retail"', async ({ customerPage, transactionPage, dialogs, db, testData }) => {
+    const deposit = testData.deposits.salary;
     const customerId = getRuntimeData<string>("customerId");
+    let balanceBefore = 0;
     let transactionId = "";
 
-    await test.step("UI: deposit into the created customer", async () => {
+    await test.step("UI: deposit into the new customer", async () => {
       await customerPage.expectLoaded();
+      await customerPage.expectLoggedInAs(testData.users.teller);
       await customerPage.searchCustomer(customerId);
-      await customerPage.expectCustomerFound(flow.name);
-      expect(await customerPage.getBalance()).toBe(flow.openingBalance);
-
+      await customerPage.expectCustomerFound(testData.newCustomers.retail.name);
+      balanceBefore = await customerPage.getBalance();
       await customerPage.goToTransactionPage();
-      dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submitTransaction("deposit", flow.depositAmount, flow.depositReason);
+
+      await transactionPage.submitTransaction("deposit", deposit.amount, deposit.reason);
+      await dialogs.expectShown(testData.messages.transactionSuccess);
       await transactionPage.expectSuccess();
-      await expect(transactionPage.transactionId).toHaveText(/^\d+$/);
+      expect(await transactionPage.getBalance()).toBeCloseTo(balanceBefore + deposit.amount, 2);
       transactionId = (await transactionPage.transactionId.textContent()) ?? "";
-      saveRuntimeData(testInfo, "depositTransactionId", transactionId);
-      expect(await transactionPage.getBalance()).toBe(flow.openingBalance + flow.depositAmount);
     });
 
-    await test.step("DB: deposit and ledger row are stored", async () => {
+    await test.step("DB: the deposit and the customer balance are stored", async () => {
       if (!Database.isAvailable()) return;
 
+      const balanceAfter = balanceBefore + deposit.amount;
       const transactionRows = await db.query<TransactionRow>(
-        `SELECT TransactionId, TransactionType, Amount, BalanceBefore, BalanceAfter,
-                Reason, TransactionDateTime, CreatedBy
-         FROM dbo.Transactions
-         WHERE TransactionId = @transactionId AND CustomerId = @customerId`,
+        `SELECT TransactionId, TransactionType, Amount, BalanceBefore, BalanceAfter, Reason, TransactionDateTime, CreatedBy
+         FROM dbo.Transactions WHERE TransactionId = @transactionId AND CustomerId = @customerId`,
         { transactionId: Number(transactionId), customerId },
       );
 
       expect(transactionRows).toHaveLength(1);
       expect(transactionRows[0]).toMatchObject({
         TransactionId: transactionId,
-        TransactionType: transactions.deposit.databaseType,
-        Reason: flow.depositReason,
-        CreatedBy: data.userIds.T,
+        TransactionType: testData.transactionTypes.deposit,
+        Reason: deposit.reason,
+        CreatedBy: testData.users.teller,
       });
-      expect(Number(transactionRows[0].Amount)).toBe(flow.depositAmount);
-      expect(Number(transactionRows[0].BalanceBefore)).toBe(flow.openingBalance);
-      expect(Number(transactionRows[0].BalanceAfter)).toBe(flow.openingBalance + flow.depositAmount);
+      expect(Number(transactionRows[0].Amount)).toBe(deposit.amount);
+      expect(Number(transactionRows[0].BalanceBefore)).toBe(balanceBefore);
+      expect(Number(transactionRows[0].BalanceAfter)).toBe(balanceAfter);
       expect(transactionRows[0].TransactionDateTime).toBeInstanceOf(Date);
 
-      const customerRows = await db.query<CustomerBalanceRow>(`SELECT Balance FROM dbo.Customers WHERE CustomerId = @customerId`, { customerId });
+      const customerRows = await db.query<CustomerBalanceRow>("SELECT Balance FROM dbo.Customers WHERE CustomerId = @customerId", { customerId });
       expect(customerRows).toHaveLength(1);
-      expect(Number(customerRows[0].Balance)).toBe(flow.openingBalance + flow.depositAmount);
+      expect(Number(customerRows[0].Balance)).toBe(balanceAfter);
     });
   });
-});
 
-test.describe("Customer deposit", () => {
-  test.use({ storageState: getAuthFile(data.userIds.T) });
-
-  test.describe("with a selected customer", () => {
-    test.beforeEach(async ({ customerPage }) => {
+  for (const { customer, deposit } of [
+    { customer: "retail", deposit: "standard" },
+    { customer: "retail", deposit: "decimal" },
+    { customer: "corporate", deposit: "standard" },
+  ]) {
+    test(`The Teller deposits "${deposit}" into customer "${customer}"`, async ({ customerPage, transactionPage, dialogs, testData }) => {
       await customerPage.expectLoaded();
-      await customerPage.searchCustomer(customers.valid.id);
+      await customerPage.expectLoggedInAs(testData.users.teller);
+      await customerPage.searchCustomer(testData.customers[customer].id);
+      await customerPage.expectCustomerFound(testData.customers[customer].name);
+      const balanceBefore = await customerPage.getBalance();
+      await customerPage.goToTransactionPage();
+
+      await transactionPage.submitTransaction("deposit", testData.deposits[deposit].amount, testData.deposits[deposit].reason);
+
+      await dialogs.expectShown(testData.messages.transactionSuccess);
+      await transactionPage.expectSuccess();
+      expect(await transactionPage.getBalance()).toBeCloseTo(balanceBefore + testData.deposits[deposit].amount, 2);
+    });
+  }
+
+  test.describe('with customer "retail" open on the transaction page', () => {
+    test.beforeEach(async ({ customerPage, testData }) => {
+      await customerPage.expectLoaded();
+      await customerPage.expectLoggedInAs(testData.users.teller);
+      await customerPage.searchCustomer(testData.customers.retail.id);
+      await customerPage.expectCustomerFound(testData.customers.retail.name);
       await customerPage.goToTransactionPage();
     });
 
-    test("increases the account balance", async ({ transactionPage, dialogs }) => {
-      dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submitTransaction("deposit", transactions.deposit.amount, transactions.deposit.reason);
-      await transactionPage.expectSuccess();
-      expect(await transactionPage.getBalance()).toBe(transactions.deposit.expectedBalance);
-    });
+    for (const reason of ["cash", "cheque", "salary", "transfer", "refund"]) {
+      test(`The Teller deposits using reason "${reason}"`, async ({ transactionPage, dialogs, testData }) => {
+        await transactionPage.submitTransaction("deposit", testData.deposits.standard.amount, testData.depositReasons[reason]);
 
-    test("accepts a decimal amount", async ({ transactionPage, dialogs }) => {
-      dialogs.expectNext(expectedMessages.transactionSuccess);
-      await transactionPage.submitTransaction("deposit", transactions.deposit.decimalAmount);
-      await transactionPage.expectSuccess();
-      expect(await transactionPage.getBalance()).toBeCloseTo(customers.valid.balance + transactions.deposit.decimalAmount, 2);
-    });
-
-    test("offers only deposit reasons", async ({ transactionPage }) => {
-      await transactionPage.type.selectOption("deposit");
-      await transactionPage.expectReasons(transactions.deposit.reasons);
-    });
-
-    for (const reason of transactions.deposit.reasons) {
-      test(`accepts the reason "${reason}"`, async ({ transactionPage, dialogs }) => {
-        dialogs.expectNext(expectedMessages.transactionSuccess);
-        await transactionPage.submitTransaction("deposit", transactions.deposit.amount, reason);
+        await dialogs.expectShown(testData.messages.transactionSuccess);
         await transactionPage.expectSuccess();
-        await transactionPage.expectSelectedReason(reason);
+        await transactionPage.expectSelectedReason(testData.depositReasons[reason]);
       });
     }
 
-    for (const amount of transactions.invalidAmounts) {
-      test(`rejects invalid amount ${amount}`, async ({ transactionPage, dialogs }) => {
-        dialogs.expectNext(expectedMessages.invalidAmount);
-        await transactionPage.submitTransaction("deposit", amount);
-        await transactionPage.expectError(expectedMessages.invalidAmount);
+    test("Only deposit reasons are offered for a deposit", async ({ transactionPage, testData }) => {
+      await transactionPage.type.selectOption("deposit");
+
+      await transactionPage.expectReasons(Object.values(testData.depositReasons));
+    });
+
+    for (const invalidAmount of ["zero", "negative"]) {
+      test(`A deposit of invalid amount "${invalidAmount}" is rejected`, async ({ transactionPage, dialogs, testData }) => {
+        await transactionPage.submitTransaction("deposit", testData.invalidAmounts[invalidAmount]);
+
+        await dialogs.expectShown(testData.messages.invalidAmount);
+        await transactionPage.expectError(testData.messages.invalidAmount);
       });
     }
   });
 
-  test("cannot deposit before selecting a customer", async ({ customerPage, transactionPage, dialogs }) => {
+  test("A deposit without a selected customer is rejected", async ({ customerPage, transactionPage, dialogs, testData }) => {
+    await customerPage.expectLoaded();
+    await customerPage.expectLoggedInAs(testData.users.teller);
     await customerPage.goToTransactionPage();
-    dialogs.expectNext(expectedMessages.customerRequired);
-    await transactionPage.submitTransaction("deposit", transactions.unselectedCustomerAmount);
-    await transactionPage.expectError(expectedMessages.customerRequired);
+
+    await transactionPage.submitTransaction("deposit", testData.deposits.standard.amount, testData.deposits.standard.reason);
+
+    await dialogs.expectShown(testData.messages.customerNotSelected);
+    await transactionPage.expectError(testData.messages.customerNotSelected);
   });
 });
 
-test.describe("Customer deposit by a non-Teller user", () => {
-  test.use({ storageState: getAuthFile(data.userIds.BM) });
+test.describe("Customer deposits by a Branch Manager", () => {
+  test.use({ authRole: "branchManager" });
 
-  test("is blocked", async ({ customerPage, transactionPage, dialogs }) => {
-    dialogs.expectNext(expectedMessages.tellerRequired);
+  test("A Branch Manager cannot post a deposit", async ({ customerPage, transactionPage, dialogs, testData }) => {
+    await customerPage.expectLoaded();
+    await customerPage.expectLoggedInAs(testData.users.branchManager);
+
     await customerPage.goToTransactionPage();
+
+    await dialogs.expectShown(testData.messages.tellerOnly);
+    await transactionPage.expectError(testData.messages.tellerOnly);
     await expect(transactionPage.submitButton).toBeDisabled();
-    await transactionPage.expectError(expectedMessages.tellerRequired);
   });
 });

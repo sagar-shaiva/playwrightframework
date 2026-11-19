@@ -11,10 +11,10 @@ setup("open branch before authentication", async ({ page }) => {
 
   const loginPage = new LoginPage(appPage);
   await loginPage.expectLoaded();
-  await loginPage.login(data.userIds.SU, data.password);
+  await loginPage.login(data.users.superUser, data.password);
 
   const customerPage = new CustomerPage(appPage);
-  await customerPage.expectLoggedInAs(data.userIds.SU);
+  await customerPage.expectLoggedInAs(data.users.superUser);
 
   const branchPage = new BranchPage(appPage);
   await branchPage.ensureOpen();

@@ -11,7 +11,7 @@ out of the box. Point the config at your real URLs to use it for the actual appl
 
 - **Environments:** `qa`, `uat`, `training` (config in `env/.env.qa` / `env/.env.uat` / `env/.env.training`)
 - **Countries:** `FJ, VN, VU, KI, TO, TL, SB, PNG, WS, CK`
-- **User ID keys per country:** `SU, BM, BS, BO, E, L, LM, MG, T`
+- **User role keys per country:** `superUser, branchManager, branchSupervisor, backOffice, enquiry, loanOfficer, loanManager, manager, teller`
 
 User IDs differ per environment and country, e.g. `FJ_SU_BRQA41`, `FJ_SU_BRUAT41`, and
 `FJ_SU_BRTR41`. All test data for a country — user IDs, single `password`, customers, transactions and negative-login cases —
@@ -33,7 +33,7 @@ src/
   types/                   # shared database and runtime-data contracts
   utils/                   # database (mssql) and report date helper
   data/
-    qa/ uat/ training/     # one <COUNTRY>.json per country: userIds + password + all spec data
+    qa/ uat/ training/     # one <COUNTRY>.json per country: users + password + all spec data
 tests/                     # Teller, user-specific, multi-user, and manual-login examples
   01-branch-open.setup.ts  # SU opens the branch before authentication
   02-auth.setup.ts         # logs in each userId and saves its storageState
@@ -108,13 +108,14 @@ run in dependency order; other BDD scenarios run afterward. Append `:headed` to 
 open the browser, for example `npm run bdd:training-FJ:headed`; commands without that suffix run
 headless.
 
-Numbered `.feature` and `features/steps/` files reuse the same page objects and JSON test data. Each
-feature and step pair has a matching numeric prefix and `@bddNN` tag to scope definitions. Each BDD
-scenario reads its test values from the same JSON data used by the POM tests, so the HTML report
-includes one case per POM test while keeping business data out of feature tags.
+Numbered `.feature` and `features/steps/` files reuse the same page objects and JSON test data.
+Step texts are unique, so step definitions are shared by every feature; steps used by several
+features live in `features/steps/00-common.ts`. Each BDD scenario has a matching POM test with the
+same name and the same data keys.
 
 Authenticated BDD scenarios use the same states saved by `tests/02-auth.setup.ts`: tag scenarios
-with `@auth-SU`, `@auth-T`, `@auth-BM`, or another configured role. BDD projects depend on the
+with `@auth-superUser`, `@auth-teller`, `@auth-branchManager`, or another role key from `users`. POM
+tests select the same session with `test.use({ authRole: "teller" })`. BDD projects depend on the
 existing branch/auth setup. Use `@noauth` only for scenarios that intentionally test manual login.
 BDD HTML and JSON reports are written under `bdd-html` and `bdd-results`; POM reports stay under
 `html` and `results`.
@@ -156,12 +157,6 @@ Runtime values are grouped by spec file. Every runtime key must be unique across
 {
   "03-customer-create.spec.ts": {
     "customerId": "FJ100029"
-  },
-  "04-deposit.spec.ts": {
-    "depositTransactionId": "20"
-  },
-  "05-withdrawal.spec.ts": {
-    "withdrawalTransactionId": "21"
   }
 }
 ```
@@ -171,14 +166,11 @@ Specs use the same two methods for every runtime value:
 ```ts
 saveRuntimeData(testInfo, "customerId", customerId);
 const customerId = getRuntimeData<string>("customerId");
-
-saveRuntimeData(testInfo, "depositTransactionId", transactionId);
-const transactionId = getRuntimeData<string>("depositTransactionId");
 ```
 
 The save method derives the spec file from Playwright's `testInfo`. Specs can store any future value
 without adding another save or read function. Because reads search by key, use descriptive unique
-keys such as `depositTransactionId` and `withdrawalTransactionId`.
+keys.
 
 Database row types live in `src/types/database.types.ts`; generated-value contracts live in
 `src/types/runtimeData.types.ts`. Transaction DB steps use one simple query for the transaction row
@@ -191,7 +183,7 @@ the application can create state through supported UI or API setup.
 
 ### Where credentials live (non-production best practice)
 
-- **`src/data/<env>/<COUNTRY>.json`** — committed, per-country test data: named user IDs,
+- **`src/data/<env>/<COUNTRY>.json`** — committed, per-country test data: named users,
   a single `password`, and each spec's data. Recommended
   because these are non-secret, shared test accounts the team reads/edits per environment.
 - **`env/.env.<env>`** — complete `BASE_URL_<COUNTRY>` entry URLs and SQL Server credentials.
@@ -201,74 +193,93 @@ The dummy app uses opaque entry paths and generates new customer/transaction pat
 page objects navigate by UI elements and do not depend on those paths.
 
 Keep test inputs and expected business values in these JSON files, including amounts, reasons,
-reason lists, expected balances, and application messages. Specs should contain only test flow and
-assertion logic. Add every new field to `src/schemas/test-data.schema.ts` so missing or invalid data
-fails during configuration loading.
+messages, and the database values to assert. Tests contain only flow and assertion logic. Add every
+new field to `src/schemas/test-data.schema.ts` so missing or invalid data fails during configuration
+loading.
 
-Each data file looks like:
+Every collection is keyed by a readable name. Features and tests refer to items by that key:
 
 ```json
 {
   "password": "Password1",
-  "userIds": { "SU": "FJ_SU_BRQA41", "BM": "FJ_BM_BRQA41" },
+  "users": { "teller": "FJ_T_BRQA41", "branchManager": "FJ_BM_BRQA41" },
   "customers": {
-    "valid": { "id": "1001", "name": "John Doe", "balance": 5000 },
-    "corporate": { "id": "1003", "name": "Acme Corporation", "balance": 250000 },
-    "invalid": { "id": "9999" }
+    "retail": { "id": "1001", "name": "John Doe", "balance": 5000 },
+    "corporate": { "id": "1003", "name": "Acme Corporation", "balance": 250000 }
   },
-  "generatedCustomerFlow": {
-    "name": "Playwright Customer",
-    "type": "Retail",
-    "openingBalance": 0,
-    "depositAmount": 1000,
-    "depositReason": "Salary credit",
-    "withdrawalAmount": 250,
-    "withdrawalReason": "Cash withdrawal"
+  "unknownCustomers": { "notRegistered": { "id": "9999" } },
+  "newCustomers": { "retail": { "name": "Playwright Customer", "type": "Retail", "openingBalance": 0 } },
+  "deposits": {
+    "salary": { "amount": 1000, "reason": "Salary credit" },
+    "standard": { "amount": 500, "reason": "Cash deposit" },
+    "decimal": { "amount": 250.75, "reason": "Cash deposit" }
   },
-  "transactions": {
-    "deposit": {
-      "amount": 500,
-      "expectedBalance": 5500,
-      "reason": "Cash deposit",
-      "reasons": ["Cash deposit", "Cheque deposit", "Salary credit", "Transfer received", "Refund"],
-      "decimalAmount": 250.75,
-      "databaseType": "Deposit"
-    },
-    "withdraw": {
-      "amount": 200,
-      "expectedBalance": 4800,
-      "reason": "Cash withdrawal",
-      "reasons": ["Cash withdrawal", "Bill payment", "Transfer sent", "Service fee", "Loan repayment"],
-      "overBalanceIncrement": 0.01,
-      "databaseType": "Withdrawal"
-    },
-    "overdraft": { "amount": 999999 },
-    "invalidAmounts": [0, -50],
-    "unselectedCustomerAmount": 100
+  "withdrawals": {
+    "cash": { "amount": 250, "reason": "Cash withdrawal" },
+    "standard": { "amount": 200, "reason": "Cash withdrawal" },
+    "farAboveBalance": { "amount": 999999, "reason": "Cash withdrawal" }
   },
-  "loginNegative": {
-    "wrongPassword": { "password": "WrongPass@000" }
-  },
-  "expectedMessages": {
+  "amountsAboveBalance": { "oneCent": 0.01 },
+  "invalidAmounts": { "zero": 0, "negative": -50 },
+  "depositReasons": { "cash": "Cash deposit", "cheque": "Cheque deposit", "salary": "Salary credit", "transfer": "Transfer received", "refund": "Refund" },
+  "withdrawalReasons": { "cash": "Cash withdrawal", "billPayment": "Bill payment", "transferSent": "Transfer sent", "serviceFee": "Service fee", "loanRepayment": "Loan repayment" },
+  "transactionTypes": { "deposit": "Deposit", "withdrawal": "Withdrawal" },
+  "invalidPasswords": { "wrongPassword": "WrongPass@000" },
+  "messages": {
     "invalidPassword": "Invalid password",
     "transactionSuccess": "Transaction is successful",
     "customerNotFound": "Customer not found",
-    "customerRequired": "Please search and select a customer first",
+    "customerNotSelected": "Please search and select a customer first",
     "invalidAmount": "Enter a valid amount greater than 0",
     "insufficientFunds": "Insufficient funds for this withdrawal",
-    "tellerRequired": "Only Teller users can post transactions"
+    "tellerOnly": "Only Teller users can post transactions"
   }
 }
 ```
 
-Specs import the selected data file directly:
+`transactionTypes` holds the values expected in the `TransactionType` column of `dbo.Transactions`.
+Expected balances are not stored: each test reads the balance before the transaction and adds or
+subtracts the amount.
+
+### Writing features with key-based data
+
+POM tests and BDD steps read data the same way: ask for the `testData` fixture and look values up
+by key. Feature steps name the data they use in double quotes; the value behind each key lives in
+the JSON file, so the same feature runs in every environment and country.
+
+```gherkin
+Scenario: A withdrawal far above the balance is rejected
+  Given I am signed in as "teller"
+  And I open customer "retail" on the transaction page
+  When I withdraw "farAboveBalance"
+  Then I see the transaction error "insufficientFunds"
+```
 
 ```ts
-import { data } from "../config/env.config";
-
-const { customers, transactions } = data;
-const branchManagerId = data.userIds.BM;
+When("I withdraw {string}", async ({ transactionPage, testData }, withdrawalKey: string) => {
+  const withdrawal = testData.withdrawals[withdrawalKey];
+  await transactionPage.submitTransaction("withdraw", withdrawal.amount, withdrawal.reason);
+});
 ```
+
+The matching POM test uses the same keys:
+
+```ts
+test("A withdrawal far above the balance is rejected", async ({ transactionPage, dialogs, testData }) => {
+  await transactionPage.submitTransaction("withdraw", testData.withdrawals.farAboveBalance.amount, testData.withdrawals.farAboveBalance.reason);
+  await dialogs.expectShown(testData.messages.insufficientFunds);
+  await transactionPage.expectError(testData.messages.insufficientFunds);
+});
+```
+
+Rules:
+
+- Every step starts with "I"; checks start with "I see" or "I am".
+- Data keys are always in double quotes and match `{string}` in the step definition. Literal values
+  (amounts, names, messages) never appear in features.
+- Use a **Scenario Outline** when the same steps run with different keys; the Examples table lists
+  keys and the POM test loops over the same list. Use a **Scenario** when the steps differ.
+- Use the same scenario and test names in both lanes.
 
 Open the last HTML report:
 
@@ -295,20 +306,19 @@ and `asUser` fixtures. POM tests start logged out unless the spec explicitly sel
 
 ```ts
 import { test } from "../src/fixtures/test.fixtures";
-import { data, getAuthFile } from "../config/env.config";
 
-test.use({ storageState: getAuthFile(data.userIds.T) });
+test.use({ authRole: "teller" });
 
 test("opens customer search", async ({ customerPage }) => {
   await customerPage.expectLoaded();
 });
 ```
 
-For a whole test block that uses another user, override its saved state:
+For a whole test block that uses another user, override the role:
 
 ```ts
 test.describe("Branch Manager", () => {
-  test.use({ storageState: getAuthFile(data.userIds.BM) });
+  test.use({ authRole: "branchManager" });
 
   test("approves a request", async ({ customerPage }) => {
     await customerPage.expectLoaded();
@@ -319,11 +329,11 @@ test.describe("Branch Manager", () => {
 When one test needs another user in addition to its selected session, use `asUser`:
 
 ```ts
-test("teller submits and manager reviews", async ({ customerPage, asUser }) => {
+test("teller submits and manager reviews", async ({ customerPage, asUser, testData }) => {
   await customerPage.expectLoaded();
 
-  const managerCustomerPage = await asUser(data.userIds.MG);
-  await managerCustomerPage.expectLoggedInAs(data.userIds.MG);
+  const managerCustomerPage = await asUser("manager");
+  await managerCustomerPage.expectLoggedInAs(testData.users.manager);
 });
 ```
 
@@ -439,13 +449,13 @@ npx playwright test tests/09-statement.spec.ts --headed
 
 ## Browser dialogs
 
-The automatic `dialogs` fixture accepts unexpected browser dialogs and prints their messages at
-the end of the test so an unplanned popup cannot leave Playwright blocked. Register expected
-dialogs before the action that opens them; their exact message is validated before OK is clicked:
+The automatic `dialogs` fixture accepts every browser dialog so a popup can never leave Playwright
+blocked, and records each message. Assert a dialog after the action that opens it; messages no test
+checked are printed at the end of the test as unexpected:
 
 ```ts
-dialogs.expectNext(data.expectedMessages.transactionSuccess);
-await transactionPage.submitTransaction("deposit", transactions.deposit.amount);
+await transactionPage.submitTransaction("deposit", testData.deposits.standard.amount, testData.deposits.standard.reason);
+await dialogs.expectShown(testData.messages.transactionSuccess);
 ```
 
 ## Pointing at the real application

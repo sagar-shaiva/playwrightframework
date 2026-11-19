@@ -1,31 +1,28 @@
 import { test, expect } from "../src/fixtures/test.fixtures";
-import { data, getAuthFile } from "../config/env.config";
 
-const { customers } = data;
+test.use({ authRole: "teller" });
 
-test.use({ storageState: getAuthFile(data.userIds.T) });
-
-test.describe.serial("Teller customer lookup", () => {
-  test.beforeEach(async ({ customerPage }) => {
+test.describe("Customer lookup", () => {
+  test.beforeEach(async ({ customerPage, testData }) => {
     await customerPage.expectLoaded();
-    await customerPage.expectLoggedInAs(data.userIds.T);
+    await customerPage.expectLoggedInAs(testData.users.teller);
   });
 
-  test("finds an existing retail customer", async ({ customerPage }) => {
-    await customerPage.searchCustomer(customers.valid.id);
-    await customerPage.expectCustomerFound(customers.valid.name);
-    expect(await customerPage.getBalance()).toBe(customers.valid.balance);
-  });
+  for (const customer of ["retail", "corporate"]) {
+    test(`The Teller finds customer "${customer}"`, async ({ customerPage, testData }) => {
+      await customerPage.searchCustomer(testData.customers[customer].id);
 
-  test("finds an existing corporate customer", async ({ customerPage }) => {
-    await customerPage.searchCustomer(customers.corporate.id);
-    await customerPage.expectCustomerFound(customers.corporate.name);
-    expect(await customerPage.getBalance()).toBe(customers.corporate.balance);
-  });
+      await customerPage.expectCustomerFound(testData.customers[customer].name);
+      expect(await customerPage.getBalance()).toBe(testData.customers[customer].balance);
+    });
+  }
 
-  test("shows an error for an unknown customer", async ({ customerPage, dialogs }) => {
-    dialogs.expectNext(data.expectedMessages.customerNotFound);
-    await customerPage.searchCustomer(customers.invalid.id);
-    await customerPage.expectCustomerNotFound();
-  });
+  for (const unknownCustomer of ["notRegistered"]) {
+    test(`The Teller cannot find unknown customer "${unknownCustomer}"`, async ({ customerPage, dialogs, testData }) => {
+      await customerPage.searchCustomer(testData.unknownCustomers[unknownCustomer].id);
+
+      await dialogs.expectShown(testData.messages.customerNotFound);
+      await customerPage.expectCustomerNotFound();
+    });
+  }
 });

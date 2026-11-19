@@ -1,32 +1,38 @@
 @bdd @bdd09
 Feature: Customer statements
+  A Teller views, downloads and prints a customer's statement as a PDF.
 
-  @auth-T
-  Scenario: Customer statement opens as a PDF in the same browser context
-    Given the configured customer is selected and statement actions are available
+  @auth-teller
+  Scenario: The statement of customer "retail" opens as a PDF in the same browser context
+    Given I am signed in as "teller"
+    And I have the "retail" customer selected with statement actions available
     When I open the customer's statement
-    Then the statement is a PDF in the same browser context
+    Then I see the statement as a PDF in the same browser context
 
-  @auth-T
-  Scenario: Customer statement can be downloaded
-    Given the configured customer is selected and statement actions are available
+  @auth-teller
+  Scenario: The statement of customer "retail" can be downloaded
+    Given I am signed in as "teller"
+    And I have the "retail" customer selected with statement actions available
     When I download the customer's statement
-    Then the downloaded file is a PDF
+    Then I see the downloaded file is a PDF named after the customer
 
-  @auth-T
-  Scenario: Print to PDF opens a PDF in a new page
-    Given the configured customer is selected and statement actions are available
+  @auth-teller
+  Scenario: Print to PDF for customer "retail" opens a PDF in a new page
+    Given I am signed in as "teller"
+    And I have the "retail" customer selected with statement actions available
     When I open Print to PDF
-    Then the print-to-PDF response is a PDF in the same context
+    Then I see the print-to-PDF response as a PDF in the same browser context
 
-  @auth-T
-  Scenario: The print preview can be saved as a PDF
-    Given the configured customer is selected and statement actions are available
+  @auth-teller
+  Scenario: The print preview for customer "retail" can be saved as a PDF
+    Given I am signed in as "teller"
+    And I have the "retail" customer selected with statement actions available
     When I open the print preview
-    Then the print preview is saved as a PDF
+    Then I see the print preview saved as a PDF
 
-  @auth-T
-  Scenario: The print preview can be saved without closing the page
-    Given the configured customer is selected and statement actions are available
+  @auth-teller
+  Scenario: The print preview for customer "retail" can be saved without closing the page
+    Given I am signed in as "teller"
+    And I have the "retail" customer selected with statement actions available
     When I open the print preview without automatic closing
-    Then the print preview is saved as a PDF
+    Then I see the print preview saved as a PDF

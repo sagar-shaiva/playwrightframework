@@ -1,87 +1,95 @@
 @bdd @bdd05
 Feature: Customer withdrawals
+  A Teller withdraws money from a customer's account.
+  Quoted names are keys in the test data file, for example "standard" under "withdrawals".
+  Database checks run only when database credentials are configured for the environment.
 
-  @auth-T
-  Scenario: Teller withdraws from the customer created in this workflow
-    Given I am signed in as the Teller
-    When I withdraw the configured amount from the customer created in this workflow
-    Then the customer's balance reflects the withdrawal
-    And the withdrawal is saved in the database when database checks are enabled
+  @auth-teller
+  Scenario: The Teller withdraws from the new customer "retail"
+    Given I am signed in as "teller"
+    And I open the new customer "retail" on the transaction page
+    When I withdraw "cash"
+    Then I see the success message "transactionSuccess"
+    And I see the balance reduced by withdrawal "cash"
+    And I see withdrawal "cash" saved in the database
 
-  @auth-T
-  Scenario: A configured withdrawal updates the customer's balance
-    Given I am signed in as the Teller
-    When I prepare a withdrawal from an existing customer
-    Then the configured withdrawal completes and the expected balance is displayed
+  @auth-teller
+  Scenario Outline: The Teller withdraws "<withdrawal>" from customer "<customer>"
+    Given I am signed in as "teller"
+    And I open customer "<customer>" on the transaction page
+    When I withdraw "<withdrawal>"
+    Then I see the success message "transactionSuccess"
+    And I see the balance reduced by withdrawal "<withdrawal>"
 
-  @auth-T
-  Scenario: A customer must be selected before making a withdrawal
-    Given I am signed in as the Teller
-    When I submit a withdrawal without selecting a customer
-    Then the customer selection error is displayed
+    Examples:
+      | customer  | withdrawal |
+      | retail    | standard   |
+      | corporate | standard   |
 
-  @auth-T
-  Scenario: Only configured withdrawal reasons are available
-    Given I am signed in as the Teller
-    When I view the withdrawal reasons for a known customer
-    Then the available reasons match the configured withdrawal reasons
+  @auth-teller
+  Scenario: The Teller withdraws the full balance of customer "retail"
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I withdraw the full balance
+    Then I see the success message "transactionSuccess"
+    And I see the balance is zero
 
-  @auth-T
-  Scenario: Teller can use the first configured withdrawal reason
-    Given I am signed in as the Teller
-    When I prepare a withdrawal from an existing customer
-    Then the first configured withdrawal reason is accepted
+  @auth-teller
+  Scenario Outline: The Teller withdraws using reason "<reason>"
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I withdraw "standard" with reason "<reason>"
+    Then I see the success message "transactionSuccess"
+    And I see withdrawal reason "<reason>" selected
 
-  @auth-T
-  Scenario: Teller can use the second configured withdrawal reason
-    Given I am signed in as the Teller
-    When I prepare a withdrawal from an existing customer
-    Then the second configured withdrawal reason is accepted
+    Examples:
+      | reason        |
+      | cash          |
+      | billPayment   |
+      | transferSent  |
+      | serviceFee    |
+      | loanRepayment |
 
-  @auth-T
-  Scenario: Teller can use the third configured withdrawal reason
-    Given I am signed in as the Teller
-    When I prepare a withdrawal from an existing customer
-    Then the third configured withdrawal reason is accepted
+  @auth-teller
+  Scenario: Only withdrawal reasons are offered for a withdrawal
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I choose the withdrawal transaction type
+    Then I see only the withdrawal reasons offered
 
-  @auth-T
-  Scenario: Teller can use the fourth configured withdrawal reason
-    Given I am signed in as the Teller
-    When I prepare a withdrawal from an existing customer
-    Then the fourth configured withdrawal reason is accepted
+  @auth-teller
+  Scenario: A withdrawal far above the balance is rejected
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I withdraw "farAboveBalance"
+    Then I see the transaction error "insufficientFunds"
 
-  @auth-T
-  Scenario: Teller can use the fifth configured withdrawal reason
-    Given I am signed in as the Teller
-    When I prepare a withdrawal from an existing customer
-    Then the fifth configured withdrawal reason is accepted
+  @auth-teller
+  Scenario Outline: A withdrawal "<excess>" above the balance is rejected
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I withdraw "<excess>" more than the balance
+    Then I see the transaction error "insufficientFunds"
 
-  @auth-T
-  Scenario: The first configured invalid withdrawal amount is rejected
-    Given I am signed in as the Teller
-    When I prepare the withdrawal form for amount checks
-    Then the first configured invalid withdrawal amount is rejected
+    Examples:
+      | excess  |
+      | oneCent |
 
-  @auth-T
-  Scenario: The second configured invalid withdrawal amount is rejected
-    Given I am signed in as the Teller
-    When I prepare the withdrawal form for amount checks
-    Then the second configured invalid withdrawal amount is rejected
+  @auth-teller
+  Scenario Outline: A withdrawal of invalid amount "<invalidAmount>" is rejected
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I withdraw invalid amount "<invalidAmount>"
+    Then I see the transaction error "invalidAmount"
 
-  @auth-T
-  Scenario: A withdrawal above the available balance is rejected
-    Given I am signed in as the Teller
-    When I submit a withdrawal above the available balance
-    Then an insufficient funds message is displayed
+    Examples:
+      | invalidAmount |
+      | zero          |
+      | negative      |
 
-  @auth-T
-  Scenario: A withdrawal one cent above the balance is rejected
-    Given I am signed in as the Teller
-    When I submit a withdrawal one cent above the available balance
-    Then an insufficient funds message is displayed
-
-  @auth-T
-  Scenario: Teller can withdraw the full available balance
-    Given I am signed in as the Teller
-    When I withdraw the available balance
-    Then the remaining balance is zero
+  @auth-teller
+  Scenario: A withdrawal without a selected customer is rejected
+    Given I am signed in as "teller"
+    And I open the transaction page
+    When I withdraw "standard"
+    Then I see the transaction error "customerNotSelected"

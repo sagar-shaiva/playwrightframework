@@ -3,6 +3,7 @@ import { test as base } from "playwright-bdd";
 import * as fs from "fs";
 import * as path from "path";
 import { COUNTRY, ENV, data, getAuthFile } from "../../config/env.config";
+import type { TestData } from "../schemas/test-data.schema";
 import { LaunchPage } from "../pages/LaunchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { CustomerPage } from "../pages/CustomerPage";
@@ -28,8 +29,19 @@ type DialogFixtures = {
   dialogs: DialogHandler;
 };
 
+type DataFixtures = {
+  testData: TestData;
+  scenario: ScenarioState;
+};
+
+/** Values a shared step stores for a later step in the same scenario. */
+type ScenarioState = {
+  customerId: string;
+  balanceBefore: number;
+};
+
 type AuthFixtures = {
-  asUser: (userId: string) => Promise<CustomerPage>;
+  asUser: (role: string) => Promise<CustomerPage>;
 };
 
 type ScreenshotFixtures = {
@@ -38,7 +50,13 @@ type ScreenshotFixtures = {
 
 const emptyStorageState = { cookies: [], origins: [] };
 
-const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFixtures & ScreenshotFixtures>({
+const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & DataFixtures & AuthFixtures & ScreenshotFixtures>({
+  testData: async ({}, use) => {
+    await use(data);
+  },
+  scenario: async ({}, use) => {
+    await use({ customerId: "", balanceBefore: 0 });
+  },
   appPage: async ({ page }, use) => {
     const launchPage = new LaunchPage(page);
     const appPage = await launchPage.openLoginPopup();
@@ -70,44 +88,27 @@ const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFix
   dialogs: [
     async ({ appPage }, use) => {
       const dialogs = new DialogHandler(appPage);
-      try {
-        await use(dialogs);
-      } finally {
-        dialogs.dispose();
-        dialogs.printUnexpectedMessages();
-        dialogs.verifyExpectedDialogs();
-      }
+      await use(dialogs);
+      dialogs.dispose();
+      dialogs.printUnexpectedMessages();
     },
-    { auto: false },
+    { auto: true },
   ],
-  asUser: async ({ browser }, use) => {
+  asUser: async ({ browser, testData }, use) => {
     const sessions: { page: Page; dialogs: DialogHandler }[] = [];
 
-    await use(async (userId) => {
-      const page = await browser.newPage({ storageState: getAuthFile(userId) });
+    await use(async (role) => {
+      const page = await browser.newPage({ storageState: getAuthFile(testData.users[role]) });
       const launchPage = new LaunchPage(page);
       const appPage = await launchPage.openLoginPopup();
       sessions.push({ page, dialogs: new DialogHandler(appPage) });
       return new CustomerPage(appPage);
     });
 
-    const dialogErrors: string[] = [];
-
     for (const { page, dialogs } of sessions) {
       dialogs.dispose();
       dialogs.printUnexpectedMessages();
-
-      try {
-        dialogs.verifyExpectedDialogs();
-      } catch (error) {
-        dialogErrors.push(String(error));
-      } finally {
-        await page.close();
-      }
-    }
-
-    if (dialogErrors.length > 0) {
-      throw new Error(dialogErrors.join("\n"));
+      await page.close();
     }
   },
   db: async ({}, use) => {
@@ -117,12 +118,12 @@ const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & AuthFix
   },
 });
 
-/** BDD scenarios select an existing user state with @auth-ROLE; @noauth scenarios start logged out. */
+/** BDD scenarios select a saved user session with @auth-<role>, e.g. @auth-teller; @noauth scenarios start logged out. */
 export const test = appTest.extend({
-  storageState: async ({ $tags }, use) => {
+  storageState: async ({ $tags, testData }, use) => {
     const authTag = $tags.find((tag) => tag.startsWith("@auth-"));
-    const role = authTag?.slice("@auth-".length) as keyof typeof data.userIds | undefined;
-    const userId = role ? data.userIds[role] : undefined;
+    const role = authTag?.slice("@auth-".length);
+    const userId = role ? testData.users[role] : undefined;
 
     if (authTag && !userId) {
       throw new Error(`Unknown BDD authentication tag: ${authTag}`);

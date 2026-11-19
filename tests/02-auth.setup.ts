@@ -6,7 +6,7 @@ import { LaunchPage } from "../src/pages/LaunchPage";
 import { CustomerPage } from "../src/pages/CustomerPage";
 import { data, getAuthFile } from "../config/env.config";
 
-const authDirectory = path.dirname(getAuthFile(Object.values(data.userIds)[0]));
+const authDirectory = path.dirname(getAuthFile(data.users.superUser));
 
 setup.beforeAll(() => {
   fs.rmSync(authDirectory, { recursive: true, force: true });
@@ -14,10 +14,10 @@ setup.beforeAll(() => {
 });
 
 /**
- * Logs in once per configured user ID for the active env/country and persists each
+ * Logs in once per user for the active env/country and persists each
  * authenticated session to its own storageState file for the fixtures to use.
  */
-for (const userId of Object.values(data.userIds)) {
+for (const userId of Object.values(data.users)) {
   setup(`authenticate ${userId}`, async ({ page }) => {
     const authFile = getAuthFile(userId);
     const launchPage = new LaunchPage(page);

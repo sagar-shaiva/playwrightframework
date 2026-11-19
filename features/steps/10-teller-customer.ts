@@ -1,37 +1,23 @@
 import { createBdd } from "playwright-bdd";
 import { test, expect } from "../../src/fixtures/bdd.fixture";
-import { data } from "../../config/env.config";
 
-const { Given, When, Then } = createBdd(test, { tags: "@bdd10" });
+const { When, Then } = createBdd(test);
 
-Given("I am signed in as the Teller", async ({ customerPage }) => {
-  await customerPage.expectLoaded();
-  await customerPage.expectLoggedInAs(data.userIds.T);
+When("I search for customer {string}", async ({ customerPage, testData }, customerKey: string) => {
+  await customerPage.searchCustomer(testData.customers[customerKey].id);
 });
 
-When("I search for the configured retail customer", async ({ customerPage }) => {
-  await customerPage.searchCustomer(data.customers.valid.id);
+Then("I see the name and balance of customer {string}", async ({ customerPage, testData }, customerKey: string) => {
+  const customer = testData.customers[customerKey];
+  await customerPage.expectCustomerFound(customer.name);
+  expect(await customerPage.getBalance()).toBe(customer.balance);
 });
 
-Then("the retail customer's details and balance are displayed", async ({ customerPage }) => {
-  await customerPage.expectCustomerFound(data.customers.valid.name);
-  expect(await customerPage.getBalance()).toBe(data.customers.valid.balance);
+When("I search for unknown customer {string}", async ({ customerPage, testData }, unknownCustomerKey: string) => {
+  await customerPage.searchCustomer(testData.unknownCustomers[unknownCustomerKey].id);
 });
 
-When("I search for the configured corporate customer", async ({ customerPage }) => {
-  await customerPage.searchCustomer(data.customers.corporate.id);
-});
-
-Then("the corporate customer's details and balance are displayed", async ({ customerPage }) => {
-  await customerPage.expectCustomerFound(data.customers.corporate.name);
-  expect(await customerPage.getBalance()).toBe(data.customers.corporate.balance);
-});
-
-When("I search for an unknown customer", async ({ customerPage, dialogs }) => {
-  dialogs.expectNext(data.expectedMessages.customerNotFound);
-  await customerPage.searchCustomer(data.customers.invalid.id);
-});
-
-Then("the customer not found message is displayed", async ({ customerPage }) => {
+Then("I see the customer error {string}", async ({ customerPage, dialogs, testData }, messageKey: string) => {
+  await dialogs.expectShown(testData.messages[messageKey]);
   await customerPage.expectCustomerNotFound();
 });

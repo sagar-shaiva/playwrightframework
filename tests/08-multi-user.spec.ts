@@ -1,21 +1,16 @@
 import { test } from "../src/fixtures/test.fixtures";
-import { data, getAuthFile } from "../config/env.config";
 
-test.describe("Multiple user workflow", () => {
-  test.use({ storageState: getAuthFile(data.userIds.T) });
+test.describe("Multiple user sessions", () => {
+  test.use({ authRole: "teller" });
 
-  test("Teller and Branch Manager work in the same test", async ({ customerPage, asUser }) => {
-    await customerPage.expectLoaded();
-    await customerPage.expectLoggedInAs(data.userIds.T);
+  for (const otherRole of ["branchManager", "manager"]) {
+    test(`"teller" and "${otherRole}" work in separate sessions`, async ({ customerPage, asUser, testData }) => {
+      await customerPage.expectLoaded();
+      await customerPage.expectLoggedInAs(testData.users.teller);
 
-    const branchManager = await asUser(data.userIds.BM);
-    await branchManager.expectLoggedInAs(data.userIds.BM);
-  });
+      const secondSession = await asUser(otherRole);
 
-  test("Teller and Manager work in another test", async ({ customerPage, asUser }) => {
-    await customerPage.expectLoaded();
-
-    const manager = await asUser(data.userIds.MG);
-    await manager.expectLoggedInAs(data.userIds.MG);
-  });
+      await secondSession.expectLoggedInAs(testData.users[otherRole]);
+    });
+  }
 });

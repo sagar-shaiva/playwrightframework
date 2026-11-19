@@ -1,81 +1,77 @@
 @bdd @bdd04
 Feature: Customer deposits
+  A Teller deposits money into a customer's account.
+  Quoted names are keys in the test data file, for example "standard" under "deposits".
+  Database checks run only when database credentials are configured for the environment.
 
-  @auth-T
-  Scenario: Teller deposits into the customer created in this workflow
-    Given I am signed in as the Teller
-    When I deposit the configured amount into the customer created in this workflow
-    Then the customer's balance reflects the deposit
-    And the deposit is saved in the database when database checks are enabled
+  @auth-teller
+  Scenario: The Teller deposits into the new customer "retail"
+    Given I am signed in as "teller"
+    And I open the new customer "retail" on the transaction page
+    When I deposit "salary"
+    Then I see the success message "transactionSuccess"
+    And I see the balance increased by deposit "salary"
+    And I see deposit "salary" saved in the database
 
-  @auth-T
-  Scenario: A configured deposit updates the customer's balance
-    Given I am signed in as the Teller
-    When I prepare a deposit for an existing customer
-    Then the configured deposit completes and the expected balance is displayed
+  @auth-teller
+  Scenario Outline: The Teller deposits "<deposit>" into customer "<customer>"
+    Given I am signed in as "teller"
+    And I open customer "<customer>" on the transaction page
+    When I deposit "<deposit>"
+    Then I see the success message "transactionSuccess"
+    And I see the balance increased by deposit "<deposit>"
 
-  @auth-T
-  Scenario: A customer must be selected before making a deposit
-    Given I am signed in as the Teller
-    When I submit a deposit without selecting a customer
-    Then the customer selection error is displayed
+    Examples:
+      | customer  | deposit  |
+      | retail    | standard |
+      | retail    | decimal  |
+      | corporate | standard |
 
-  @auth-T
-  Scenario: Only configured deposit reasons are available
-    Given I am signed in as the Teller
-    When I view the deposit reasons for a known customer
-    Then the available reasons match the configured deposit reasons
+  @auth-teller
+  Scenario Outline: The Teller deposits using reason "<reason>"
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I deposit "standard" with reason "<reason>"
+    Then I see the success message "transactionSuccess"
+    And I see deposit reason "<reason>" selected
 
-  @auth-T
-  Scenario: A decimal deposit updates the customer's balance
-    Given I am signed in as the Teller
-    When I deposit the configured decimal amount
-    Then the customer's balance reflects the decimal deposit
+    Examples:
+      | reason   |
+      | cash     |
+      | cheque   |
+      | salary   |
+      | transfer |
+      | refund   |
 
-  @auth-T
-  Scenario: Teller can use the first configured deposit reason
-    Given I am signed in as the Teller
-    When I prepare a deposit for an existing customer
-    Then the first configured deposit reason is accepted
+  @auth-teller
+  Scenario: Only deposit reasons are offered for a deposit
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I choose the deposit transaction type
+    Then I see only the deposit reasons offered
 
-  @auth-T
-  Scenario: Teller can use the second configured deposit reason
-    Given I am signed in as the Teller
-    When I prepare a deposit for an existing customer
-    Then the second configured deposit reason is accepted
+  @auth-teller
+  Scenario Outline: A deposit of invalid amount "<invalidAmount>" is rejected
+    Given I am signed in as "teller"
+    And I open customer "retail" on the transaction page
+    When I deposit invalid amount "<invalidAmount>"
+    Then I see the transaction error "invalidAmount"
 
-  @auth-T
-  Scenario: Teller can use the third configured deposit reason
-    Given I am signed in as the Teller
-    When I prepare a deposit for an existing customer
-    Then the third configured deposit reason is accepted
+    Examples:
+      | invalidAmount |
+      | zero          |
+      | negative      |
 
-  @auth-T
-  Scenario: Teller can use the fourth configured deposit reason
-    Given I am signed in as the Teller
-    When I prepare a deposit for an existing customer
-    Then the fourth configured deposit reason is accepted
+  @auth-teller
+  Scenario: A deposit without a selected customer is rejected
+    Given I am signed in as "teller"
+    And I open the transaction page
+    When I deposit "standard"
+    Then I see the transaction error "customerNotSelected"
 
-  @auth-T
-  Scenario: Teller can use the fifth configured deposit reason
-    Given I am signed in as the Teller
-    When I prepare a deposit for an existing customer
-    Then the fifth configured deposit reason is accepted
-
-  @auth-T
-  Scenario: The first configured invalid deposit amount is rejected
-    Given I am signed in as the Teller
-    When I prepare the deposit form for amount checks
-    Then the first configured invalid deposit amount is rejected
-
-  @auth-T
-  Scenario: The second configured invalid deposit amount is rejected
-    Given I am signed in as the Teller
-    When I prepare the deposit form for amount checks
-    Then the second configured invalid deposit amount is rejected
-
-  @auth-BM
-  Scenario: A Branch Manager cannot submit a deposit
-    Given I am signed in as the Branch Manager
-    When a Branch Manager attempts to open the deposit page
-    Then the application prevents the transaction
+  @auth-branchManager
+  Scenario: A Branch Manager cannot post a deposit
+    Given I am signed in as "branchManager"
+    When I open the transaction page
+    Then I see the transaction error "tellerOnly"
+    And I see the submit button disabled

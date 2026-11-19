@@ -1,14 +1,14 @@
 @bdd @bdd08
 Feature: Multiple user sessions
+  Two users work at the same time in separate browser sessions.
 
-  @auth-T
-  Scenario: Teller and Branch Manager use separate sessions
-    Given I am signed in as the Teller
-    When I open a session as the Branch Manager
-    Then the second session is authenticated as the Branch Manager
+  @auth-teller
+  Scenario Outline: "teller" and "<otherRole>" work in separate sessions
+    Given I am signed in as "teller"
+    When I open a second session as "<otherRole>"
+    Then I see the second session signed in as "<otherRole>"
 
-  @auth-T
-  Scenario: Teller and Manager use separate sessions
-    Given the authenticated session is ready
-    When I open a session as the Manager
-    Then the second session is authenticated as the Manager
+    Examples:
+      | otherRole     |
+      | branchManager |
+      | manager       |

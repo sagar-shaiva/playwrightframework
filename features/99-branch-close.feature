@@ -1,9 +1,10 @@
 @bdd @bdd99
-Feature: Branch management
+Feature: Branch closing
+  The Super User closes the branch after all teller work has finished.
 
   @pomSetup
-  @auth-SU
-  Scenario: Super User closes the branch after teller workflows
-    Given I am signed in as the Super User
+  @auth-superUser
+  Scenario: The Super User closes the branch
+    Given I am signed in as "superUser"
     When I close the branch
-    Then the branch is closed
+    Then I see the branch is closed

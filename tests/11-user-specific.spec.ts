@@ -1,20 +1,25 @@
 import { test, expect } from "../src/fixtures/test.fixtures";
-import { data, getAuthFile } from "../config/env.config";
 
-test.describe("Branch Manager user scenarios", () => {
-  test.use({ storageState: getAuthFile(data.userIds.BM) });
+test.describe("Role-specific dashboards", () => {
+  test.describe("Branch Manager", () => {
+    test.use({ authRole: "branchManager" });
 
-  test("opens as the Branch Manager user", async ({ customerPage }) => {
-    await customerPage.expectLoaded();
-    await customerPage.expectLoggedInAs(data.userIds.BM);
+    test("The Branch Manager dashboard shows the Branch Manager", async ({ customerPage, testData }) => {
+      await customerPage.expectLoaded();
+
+      await customerPage.expectLoggedInAs(testData.users.branchManager);
+    });
   });
-});
 
-test.describe("Manager user scenarios", () => {
-  test.use({ storageState: getAuthFile(data.userIds.MG) });
+  test.describe("Manager", () => {
+    test.use({ authRole: "manager" });
 
-  test("opens as the Manager user", async ({ customerPage, transactionPage }) => {
-    await customerPage.goToTransactionPage();
-    await expect(transactionPage.welcomeUser).toContainText(data.userIds.MG);
+    test("The transaction page shows the Manager", async ({ customerPage, transactionPage, testData }) => {
+      await customerPage.expectLoaded();
+
+      await customerPage.goToTransactionPage();
+
+      await expect(transactionPage.welcomeUser).toContainText(testData.users.manager);
+    });
   });
 });

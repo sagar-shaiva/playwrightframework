@@ -1,37 +1,32 @@
 import { test, expect } from "../src/fixtures/test.fixtures";
-import { data, getAuthFile } from "../config/env.config";
 import { saveRuntimeData } from "../src/utils/runtimeData";
 import { Database } from "../src/utils/database";
 import type { CustomerRow } from "../src/types/database.types";
 
-test.use({ storageState: getAuthFile(data.userIds.SU) });
+test.use({ authRole: "superUser" });
 
-test("SU creates customer for transaction workflow", async ({ customerPage, db }, testInfo) => {
-  const flow = data.generatedCustomerFlow;
+test('The Super User creates the new customer "retail"', async ({ customerPage, db, testData }, testInfo) => {
+  const newCustomer = testData.newCustomers.retail;
   let customerId = "";
 
-  await test.step("UI: create customer", async () => {
+  await test.step("UI: create the new customer", async () => {
     await customerPage.expectLoaded();
-    await customerPage.expectLoggedInAs(data.userIds.SU);
+    await customerPage.expectLoggedInAs(testData.users.superUser);
 
-    customerId = await customerPage.createCustomer(flow.name, flow.type, flow.openingBalance);
+    customerId = await customerPage.createCustomer(newCustomer.name, newCustomer.type, newCustomer.openingBalance);
     saveRuntimeData(testInfo, "customerId", customerId);
 
+    await expect(customerPage.customerName).toContainText(newCustomer.name);
     await expect(customerPage.customerName).toContainText(customerId);
   });
 
-  await test.step("DB: customer is stored", async () => {
+  await test.step("DB: the new customer is stored", async () => {
     if (!Database.isAvailable()) return;
 
-    const rows = await db.query<CustomerRow>(
-      `SELECT CustomerId, CustomerName, CustomerType, Balance
-       FROM dbo.Customers
-       WHERE CustomerId = @customerId`,
-      { customerId },
-    );
+    const rows = await db.query<CustomerRow>(`SELECT CustomerId, CustomerName, CustomerType, Balance FROM dbo.Customers WHERE CustomerId = @customerId`, { customerId });
 
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ CustomerId: customerId, CustomerName: flow.name, CustomerType: flow.type });
-    expect(Number(rows[0].Balance)).toBe(flow.openingBalance);
+    expect(rows[0]).toMatchObject({ CustomerId: customerId, CustomerName: newCustomer.name, CustomerType: newCustomer.type });
+    expect(Number(rows[0].Balance)).toBe(newCustomer.openingBalance);
   });
 });

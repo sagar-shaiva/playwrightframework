@@ -1,73 +1,71 @@
 import { test, expect } from "../src/fixtures/test.fixtures";
 import * as fs from "fs";
-import { data, getAuthFile } from "../config/env.config";
 import { generatePdfFromPage, saveBrowserDownload, savePdfResponseBody } from "../src/utils/statementPdf";
 
-const customer = data.customers.valid;
+test.use({ authRole: "teller" });
 
-test.use({ storageState: getAuthFile(data.userIds.T) });
-
-test.describe.serial("Customer statement", () => {
-  test.beforeEach(async ({ customerPage }) => {
+test.describe.serial("Customer statements", () => {
+  test.beforeEach(async ({ customerPage, testData }) => {
     await customerPage.expectLoaded();
-    await customerPage.searchCustomer(customer.id);
-    await customerPage.expectCustomerFound(customer.name);
+    await customerPage.expectLoggedInAs(testData.users.teller);
+    await customerPage.searchCustomer(testData.customers.retail.id);
+    await customerPage.expectCustomerFound(testData.customers.retail.name);
     await customerPage.expectStatementActionsVisible();
   });
 
-  test("views the statement in a new page in the same context", async ({ customerPage, context }) => {
+  test('The statement of customer "retail" opens as a PDF in the same browser context', async ({ customerPage, context, testData }) => {
     const { popup, pdfUrl } = await customerPage.openStatement();
-
     expect(popup.context()).toBe(context);
     const response = await popup.request.get(pdfUrl);
     expect(response.headers()["content-type"]).toContain("application/pdf");
-    const filePath = savePdfResponseBody(await response.body(), `statement-${customer.id}-view.pdf`);
+    const filePath = savePdfResponseBody(await response.body(), `statement-${testData.customers.retail.id}-view.pdf`);
+
+    expect(popup.context()).toBe(context);
     expect(fs.readFileSync(filePath).subarray(0, 5).toString()).toBe("%PDF-");
     await popup.close();
   });
 
-  test("opens Print to PDF in a new page", async ({ customerPage, context }) => {
-    const { popup, pdfUrl } = await customerPage.openPrintToPdf();
-
-    expect(popup.context()).toBe(context);
-    const response = await popup.request.get(pdfUrl);
-    expect(response.headers()["content-type"]).toContain("application/pdf");
-    const filePath = savePdfResponseBody(await response.body(), `statement-${customer.id}-preview.pdf`);
-    expect(fs.readFileSync(filePath).subarray(0, 5).toString()).toBe("%PDF-");
-    await popup.close();
-  });
-
-  test("downloads only PDF content to the environment folder", async ({ customerPage }) => {
+  test('The statement of customer "retail" can be downloaded', async ({ customerPage, testData }) => {
     const download = await customerPage.downloadStatementPdf();
     const filePath = await saveBrowserDownload(download);
 
-    expect(download.suggestedFilename()).toBe(`statement-${customer.id}.pdf`);
+    expect(download.suggestedFilename()).toBe(`statement-${testData.customers.retail.id}.pdf`);
     expect(fs.readFileSync(filePath).subarray(0, 5).toString()).toBe("%PDF-");
   });
 
-  test("saves the printable page as PDF after clicking Print", async ({ customerPage, context }) => {
+  test('Print to PDF for customer "retail" opens a PDF in a new page', async ({ customerPage, context, testData }) => {
+    const { popup, pdfUrl } = await customerPage.openPrintToPdf();
+    expect(popup.context()).toBe(context);
+    const response = await popup.request.get(pdfUrl);
+    expect(response.headers()["content-type"]).toContain("application/pdf");
+    const filePath = savePdfResponseBody(await response.body(), `statement-${testData.customers.retail.id}-preview.pdf`);
+
+    expect(popup.context()).toBe(context);
+    expect(fs.readFileSync(filePath).subarray(0, 5).toString()).toBe("%PDF-");
+    await popup.close();
+  });
+
+  test('The print preview for customer "retail" can be saved as a PDF', async ({ customerPage, context, testData }) => {
     await context.addInitScript(() => {
       window.print = () => {};
       window.close = () => {};
     });
-
     const popup = await customerPage.openPrintPreview();
     await popup.waitForLoadState("networkidle");
+    const filePath = await generatePdfFromPage(popup, `statement-${testData.customers.retail.id}-print.pdf`);
 
-    const filePath = await generatePdfFromPage(popup, `statement-${customer.id}-print.pdf`);
     expect(fs.readFileSync(filePath).subarray(0, 5).toString()).toBe("%PDF-");
     await popup.close();
   });
 
-  test("saves the printable page as PDF after clicking Print no close", async ({ customerPage, context }) => {
+  test('The print preview for customer "retail" can be saved without closing the page', async ({ customerPage, context, testData }) => {
     await context.addInitScript(() => {
       window.print = () => {};
     });
-
     const popup = await customerPage.openPrintNoClosePreview();
     await popup.waitForLoadState("networkidle");
+    const filePath = await generatePdfFromPage(popup, `statement-${testData.customers.retail.id}-print-no-close.pdf`);
 
-    const filePath = await generatePdfFromPage(popup, `statement-${customer.id}-print-no-close.pdf`);
     expect(fs.readFileSync(filePath).subarray(0, 5).toString()).toBe("%PDF-");
     await popup.close();
   });
