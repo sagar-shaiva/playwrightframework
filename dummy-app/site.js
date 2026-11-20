@@ -391,16 +391,15 @@
       return;
     }
     if (currentPage === "login") {
-      var existingAuth = await readAuth();
-      if (existingAuth && existingAuth.country === country && existingAuth.env === env && existingAuth.userId) {
-        location.replace(pageUrl("customer"));
-        return;
-      }
       $("loginCountry").textContent = country + " (" + env.toUpperCase() + ")";
       $("loginBtn").addEventListener("click", login);
       $("password").addEventListener("keydown", function (event) {
         if (event.key === "Enter") login();
       });
+      var existingAuth = await readAuth();
+      if (existingAuth && existingAuth.country === country && existingAuth.env === env && existingAuth.userId) {
+        location.replace(pageUrl("customer"));
+      }
       return;
     }
     var auth = await requireAuth();

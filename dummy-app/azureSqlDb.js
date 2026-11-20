@@ -7,8 +7,12 @@ const pools = new Map();
 const initializedEnvironments = new Set();
 
 function readDatabaseConfig(environment) {
-  const envPath = path.resolve(__dirname, "..", "env", `.env.${environment}`);
-  const values = fs.existsSync(envPath) ? dotenv.parse(fs.readFileSync(envPath)) : {};
+  const envDir = path.resolve(__dirname, "..", "env");
+  const values = {};
+  for (const fileName of [`.env.${environment}.local`, `.env.${environment}`]) {
+    const envPath = path.join(envDir, fileName);
+    if (fs.existsSync(envPath)) Object.assign(values, { ...dotenv.parse(fs.readFileSync(envPath)), ...values });
+  }
   const server = process.env.DB_SERVER || values.DB_SERVER;
   const database = process.env.DB_NAME || values.DB_NAME;
   const user = process.env.DB_USER || values.DB_USER;

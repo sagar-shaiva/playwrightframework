@@ -1,27 +1,69 @@
 name: Playwright Tests
+
+# Manual run: Actions > Playwright Tests > Run workflow, then pick framework, environment and country.
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      framework:
+        description: Test framework
+        type: choice
+        options: [pom, bdd]
+        default: pom
+      environment:
+        description: Environment
+        type: choice
+        options: [training, qa, uat]
+        default: training
+      country:
+        description: Country
+        type: choice
+        options: [FJ, VN, VU, KI, TO, TL, SB, PNG, WS, CK]
+        default: FJ
+      database_checks:
+        description: Run the database assertions (needs the DB secrets and SQL firewall access)
+        type: boolean
+        default: true
+
 jobs:
   test:
-    timeout-minutes: 60
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # Each GitHub environment (training, qa, uat) holds its own DB variables and secret.
+    environment: ${{ inputs.environment }}
+    env:
+      FRAMEWORK: ${{ inputs.framework }}
+      TEST_ENVIRONMENT: ${{ inputs.environment }}
+      COUNTRY_CODE: ${{ inputs.country }}
+      # Blank values switch the DB assertions off; the env/*.local secret files are not on the runner.
+      DB_SERVER: ${{ inputs.database_checks && vars.DB_SERVER || '' }}
+      DB_NAME: ${{ inputs.database_checks && vars.DB_NAME || '' }}
+      DB_USER: ${{ inputs.database_checks && vars.DB_USER || '' }}
+      DB_PASSWORD: ${{ inputs.database_checks && secrets.DB_PASSWORD || '' }}
+      DB_PORT: ${{ vars.DB_PORT || '1433' }}
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run tests
+        run: |
+          if [ "$FRAMEWORK" = "bdd" ]; then prefix=bdd; else prefix=test; fi
+          npm run "$prefix:$TEST_ENVIRONMENT-$COUNTRY_CODE"
+
+      - name: Upload reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ inputs.framework }}-${{ inputs.environment }}-${{ inputs.country }}
+          path: reports/
+          retention-days: 14
+          if-no-files-found: ignore

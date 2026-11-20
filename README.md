@@ -21,8 +21,9 @@ lives in one file: `src/data/<env>/<COUNTRY>.json`. Complete country entry URLs 
 
 ```
 env/
-  .env.qa / .env.uat / .env.training  # complete entry URL per country
-.env                                  # shared secrets e.g. SQL Server (git-ignored)
+  .env.qa / .env.uat / .env.training  # complete entry URL per country (committed)
+  .env.<env>.local                    # DB credentials for that environment (git-ignored)
+.env                                  # optional shared secrets (git-ignored)
 config/
   env.config.ts            # loads one env/country data file and builds URLs, auth paths, DB config
 src/
@@ -186,7 +187,13 @@ the application can create state through supported UI or API setup.
 - **`src/data/<env>/<COUNTRY>.json`** — committed, per-country test data: named users,
   a single `password`, and each spec's data. Recommended
   because these are non-secret, shared test accounts the team reads/edits per environment.
-- **`env/.env.<env>`** — complete `BASE_URL_<COUNTRY>` entry URLs and SQL Server credentials.
+- **`env/.env.<env>`** — committed, complete `BASE_URL_<COUNTRY>` entry URLs.
+- **`env/.env.<env>.local`** — git-ignored, SQL Server credentials for that environment (`DB_SERVER`,
+  `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_PORT`). Create one per environment you run locally.
+- **GitHub Actions** — the same values live in each GitHub _environment_ (see below).
+
+Load order is `.env.<env>.local`, then `.env.<env>`, then `.env`; a variable that is already set
+(shell, GitHub secret) is never overridden.
 
 `BASE_URL_<COUNTRY>` must be the full URL to open. The framework appends no query string or route.
 The dummy app uses opaque entry paths and generates new customer/transaction paths internally;
@@ -281,6 +288,32 @@ Rules:
   keys and the POM test loops over the same list. Use a **Scenario** when the steps differ.
 - Use the same scenario and test names in both lanes.
 
+## Running in GitHub Actions
+
+`.github/workflows/playwright.yml` runs manually: **Actions > Playwright Tests > Run workflow**, then
+choose the framework (`pom` or `bdd`), environment (`training`, `qa`, `uat`), country, and whether
+to run the database assertions. It runs the same `npm run test:<env>-<COUNTRY>` or
+`npm run bdd:<env>-<COUNTRY>` command as a local run and uploads `reports/` as an artifact.
+
+One-time setup, per environment (repository **Settings > Environments > New environment**, named
+`training`, `qa`, `uat`):
+
+| Type                     | Name          | Example                                 |
+| ------------------------ | ------------- | --------------------------------------- |
+| Environment **secret**   | `DB_PASSWORD` | the SQL password                        |
+| Environment **variable** | `DB_SERVER`   | `playwrightserver.database.windows.net` |
+| Environment **variable** | `DB_NAME`     | `playwrightdb`                          |
+| Environment **variable** | `DB_USER`     | `sagaradmin`                            |
+
+Only the password is a secret; the others are plain variables. Test-user passwords in
+`src/data/**` are shared test accounts and stay in the repository.
+
+The SQL server must accept the runner: turn on **Allow Azure services and resources to access this
+server** under the SQL server's Networking page. The `qa` and `uat` URLs point at `localhost`, so
+those runs start the dummy app on the runner and need the database settings above.
+
+## Reports
+
 Open the last HTML report:
 
 ```powershell
@@ -359,7 +392,7 @@ opens (`openLoginPopup`, `openStatement`), and assertions start with `expect`
 ## SQL Server (SSMS) assertions
 
 Set `DB_SERVER`, `DB_USER`, `DB_PASSWORD`, `DB_PORT`, and optionally `DB_NAME` in the respective
-`env/.env.<env>` file.
+`env/.env.<env>.local` file.
 Use the `db` fixture to query and assert backend state:
 
 ```ts

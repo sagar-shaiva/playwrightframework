@@ -20,11 +20,13 @@ export interface DbConfig {
 /** Active environment, selected via TEST_ENV (default: qa). */
 export const ENV = (process.env.TEST_ENV ?? "qa").toLowerCase() as EnvName;
 
-// Load the per-environment dotenv file from env/.env.<ENV>, then an optional base .env.
-// dotenv never overrides already-set vars.
-const envFilePath = path.resolve(__dirname, "..", "env", `.env.${ENV}`);
-if (fs.existsSync(envFilePath)) {
-  dotenv.config({ path: envFilePath });
+// Load secrets first (env/.env.<ENV>.local, git-ignored), then env/.env.<ENV> (URLs), then an optional base .env.
+// dotenv never overrides already-set vars, so GitHub Actions secrets and shell variables always win.
+for (const fileName of [`.env.${ENV}.local`, `.env.${ENV}`]) {
+  const envFilePath = path.resolve(__dirname, "..", "env", fileName);
+  if (fs.existsSync(envFilePath)) {
+    dotenv.config({ path: envFilePath });
+  }
 }
 dotenv.config();
 

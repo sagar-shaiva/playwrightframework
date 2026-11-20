@@ -14,3 +14,9 @@ node_modules/
 /runtime-data/
 /allure-report/
 /allure-results/
+
+/dummy-app-deploy.zip
+
+# Local secrets
+/.env
+/env/*.local

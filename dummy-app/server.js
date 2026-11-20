@@ -6,7 +6,7 @@ const path = require("path");
 const PDFDocument = require("pdfkit");
 const { createCustomer, findCustomer, listCustomers, deleteCustomer, postTransaction } = require("./azureSqlDb");
 
-const PORT = process.env.APP_PORT ? Number(process.env.APP_PORT) : 3100;
+const PORT = Number(process.env.APP_PORT || process.env.PORT || 3100);
 const ROOT = __dirname;
 const USER_TYPES = ["SU", "BM", "BS", "BO", "E", "L", "LM", "MG", "T"];
 const ENV_SUFFIXES = { qa: "QA", uat: "UAT", training: "TR" };
