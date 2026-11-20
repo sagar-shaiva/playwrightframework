@@ -10,7 +10,7 @@ Feature: Customer withdrawals
     And I open the new customer "retail" on the transaction page
     When I withdraw "cash"
     Then I see the success message "transactionSuccess"
-    And I see the balance reduced by withdrawal "cash"
+    And I see the new customer "retail" balance after deposit "salary" and withdrawal "cash"
     And I see withdrawal "cash" saved in the database
 
   @auth-teller
@@ -19,7 +19,7 @@ Feature: Customer withdrawals
     And I open customer "<customer>" on the transaction page
     When I withdraw "<withdrawal>"
     Then I see the success message "transactionSuccess"
-    And I see the balance reduced by withdrawal "<withdrawal>"
+    And I see the balance of customer "<customer>" reduced by withdrawal "<withdrawal>"
 
     Examples:
       | customer  | withdrawal |
@@ -30,7 +30,7 @@ Feature: Customer withdrawals
   Scenario: The Teller withdraws the full balance of customer "retail"
     Given I am signed in as "teller"
     And I open customer "retail" on the transaction page
-    When I withdraw the full balance
+    When I withdraw the full balance of customer "retail"
     Then I see the success message "transactionSuccess"
     And I see the balance is zero
 
@@ -68,7 +68,7 @@ Feature: Customer withdrawals
   Scenario Outline: A withdrawal "<excess>" above the balance is rejected
     Given I am signed in as "teller"
     And I open customer "retail" on the transaction page
-    When I withdraw "<excess>" more than the balance
+    When I withdraw "<excess>" more than the balance of customer "retail"
     Then I see the transaction error "insufficientFunds"
 
     Examples:

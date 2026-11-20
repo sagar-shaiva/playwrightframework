@@ -11,7 +11,8 @@ export class LaunchPage {
 
   /** Opens the env/country URL and returns the popup page where login and the application run. */
   async openLoginPopup(): Promise<Page> {
-    const popupPromise = this.page.waitForEvent("popup");
+    // No own timeout: the 15s default would start counting before goto() and expire on a slow host.
+    const popupPromise = this.page.waitForEvent("popup", { timeout: 0 });
     await this.page.goto(getAppUrl());
     await expect(this.bankName).toBeVisible();
 

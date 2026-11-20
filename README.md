@@ -109,10 +109,11 @@ run in dependency order; other BDD scenarios run afterward. Append `:headed` to 
 open the browser, for example `npm run bdd:training-FJ:headed`; commands without that suffix run
 headless.
 
-Numbered `.feature` and `features/steps/` files reuse the same page objects and JSON test data.
-Step texts are unique, so step definitions are shared by every feature; steps used by several
-features live in `features/steps/00-common.ts`. Each BDD scenario has a matching POM test with the
-same name and the same data keys.
+Each feature has one step file with the same name: `features/04-deposit.feature` uses
+`features/steps/04-deposit.steps.ts`. The step file is limited to its feature by the `@bddNN` tag in
+`createBdd(test, { tags: "@bdd04" })`, so there are no shared steps and the same step text can live in
+several step files. Each BDD scenario has a matching POM test with the same name and the same data
+keys.
 
 Authenticated BDD scenarios use the same states saved by `tests/02-auth.setup.ts`: tag scenarios
 with `@auth-superUser`, `@auth-teller`, `@auth-branchManager`, or another role key from `users`. POM

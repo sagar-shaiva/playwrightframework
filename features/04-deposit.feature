@@ -10,8 +10,8 @@ Feature: Customer deposits
     And I open the new customer "retail" on the transaction page
     When I deposit "salary"
     Then I see the success message "transactionSuccess"
-    And I see the balance increased by deposit "salary"
-    And I see deposit "salary" saved in the database
+    And I see the new customer "retail" balance increased by deposit "salary"
+    And I see deposit "salary" saved in the database for the new customer "retail"
 
   @auth-teller
   Scenario Outline: The Teller deposits "<deposit>" into customer "<customer>"
@@ -19,7 +19,7 @@ Feature: Customer deposits
     And I open customer "<customer>" on the transaction page
     When I deposit "<deposit>"
     Then I see the success message "transactionSuccess"
-    And I see the balance increased by deposit "<deposit>"
+    And I see the balance of customer "<customer>" increased by deposit "<deposit>"
 
     Examples:
       | customer  | deposit  |

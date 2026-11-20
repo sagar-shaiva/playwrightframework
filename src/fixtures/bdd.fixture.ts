@@ -31,13 +31,6 @@ type DialogFixtures = {
 
 type DataFixtures = {
   testData: TestData;
-  scenario: ScenarioState;
-};
-
-/** Values a shared step stores for a later step in the same scenario. */
-type ScenarioState = {
-  customerId: string;
-  balanceBefore: number;
 };
 
 type AuthFixtures = {
@@ -53,9 +46,6 @@ const emptyStorageState = { cookies: [], origins: [] };
 const appTest = base.extend<PageFixtures & DbFixtures & DialogFixtures & DataFixtures & AuthFixtures & ScreenshotFixtures>({
   testData: async ({}, use) => {
     await use(data);
-  },
-  scenario: async ({}, use) => {
-    await use({ customerId: "", balanceBefore: 0 });
   },
   appPage: async ({ page }, use) => {
     const launchPage = new LaunchPage(page);

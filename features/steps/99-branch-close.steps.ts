@@ -1,14 +1,11 @@
 import { createBdd } from "playwright-bdd";
 import { test, expect } from "../../src/fixtures/bdd.fixture";
 
-const { When, Then } = createBdd(test);
+const { Given, When, Then } = createBdd(test, { tags: "@bdd99" });
 
-When("I open the branch", async ({ branchPage }) => {
-  await branchPage.ensureOpen();
-});
-
-Then("I see the branch is open", async ({ branchPage }) => {
-  await expect(branchPage.state).toHaveText("Open");
+Given("I am signed in as {string}", async ({ customerPage, testData }, role: string) => {
+  await customerPage.expectLoaded();
+  await customerPage.expectLoggedInAs(testData.users[role]);
 });
 
 When("I close the branch", async ({ branchPage }) => {
