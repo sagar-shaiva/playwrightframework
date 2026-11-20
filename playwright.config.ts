@@ -103,7 +103,7 @@ export default defineConfig({
   testDir: "./tests",
   tag: process.env.TAG,
   fullyParallel: false,
-  workers: process.env.CI ? 1 : undefined,
+  workers: undefined,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   timeout: 60_000,

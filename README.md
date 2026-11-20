@@ -63,8 +63,8 @@ npx playwright install
 
 ## Running
 
-Select the target with env vars. Playwright chooses the local worker count automatically; CI uses
-one worker. Cross-spec ordering is defined with Playwright project dependencies rather than
+Select the target with env vars. Playwright chooses the worker count automatically, locally and in
+GitHub Actions. Cross-spec ordering is defined with Playwright project dependencies rather than
 filename order.
 
 ```powershell

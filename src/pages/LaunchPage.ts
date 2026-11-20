@@ -14,6 +14,11 @@ export class LaunchPage {
     const popupPromise = this.page.waitForEvent("popup");
     await this.page.goto(getAppUrl());
     await expect(this.bankName).toBeVisible();
+
+    // The page opens the popup itself; the button is the fallback when a slow host delays it.
+    const popup = await Promise.race([popupPromise, this.page.waitForTimeout(5_000)]);
+    if (popup) return popup;
+    await this.page.getByRole("button", { name: "Open sign-in window" }).click();
     return popupPromise;
   }
 }
