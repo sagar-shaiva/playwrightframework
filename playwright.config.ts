@@ -8,7 +8,7 @@ const reportRoot = `reports/${ENV}/${COUNTRY}/${date}`;
 const reportPrefix = process.env.FRAMEWORK === "bdd" ? "bdd-" : "";
 const bddFeatures = {
   features: "features/*.feature",
-  steps: ["features/steps/*.steps.ts", "src/fixtures/bdd.fixture.ts"],
+  steps: ["steps/*.steps.ts", "src/fixtures/bdd.fixture.ts"],
 };
 const isBddMode = process.env.FRAMEWORK === "bdd";
 const bddProjects = [

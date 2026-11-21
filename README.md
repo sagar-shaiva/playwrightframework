@@ -48,7 +48,8 @@ tests/                     # Teller, user-specific, multi-user, and manual-login
   10-teller-customer.spec.ts
   11-user-specific.spec.ts
   99-branch-close.teardown.ts # SU closes the branch after all tests
-features/                  # Numbered Playwright-BDD features, matching step files in features/steps/
+features/                  # Numbered Playwright-BDD feature files (Gherkin only)
+steps/                     # One step file per feature with the same name: 04-deposit.feature -> 04-deposit.steps.ts
 dummy-app/                 # launch.html (bank info), login.html popup, customer.html, transaction.html
 reports/<env>/<country>/<DD-MM-YYYY>/ # reports and test artifacts
 auth/<env>/<userId>.json     # saved storageState sessions
@@ -110,7 +111,7 @@ open the browser, for example `npm run bdd:training-FJ:headed`; commands without
 headless.
 
 Each feature has one step file with the same name: `features/04-deposit.feature` uses
-`features/steps/04-deposit.steps.ts`. The step file is limited to its feature by the `@bddNN` tag in
+`steps/04-deposit.steps.ts`. The step file is limited to its feature by the `@bddNN` tag in
 `createBdd(test, { tags: "@bdd04" })`, so there are no shared steps and the same step text can live in
 several step files. Each BDD scenario has a matching POM test with the same name and the same data
 keys.

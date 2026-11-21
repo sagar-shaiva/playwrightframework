@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import { createBdd } from "playwright-bdd";
-import { test, expect } from "../../src/fixtures/bdd.fixture";
-import { generatePdfFromPage, saveBrowserDownload, savePdfResponseBody } from "../../src/utils/statementPdf";
+import { test, expect } from "../src/fixtures/bdd.fixture";
+import { generatePdfFromPage, saveBrowserDownload, savePdfResponseBody } from "../src/utils/statementPdf";
 import type { Download, Page } from "@playwright/test";
 
 const { Given, When, Then } = createBdd(test, { tags: "@bdd09" });

@@ -1,8 +1,8 @@
 import { createBdd } from "playwright-bdd";
-import { test, expect } from "../../src/fixtures/bdd.fixture";
-import { Database } from "../../src/utils/database";
-import { getRuntimeData } from "../../src/utils/runtimeData";
-import type { CustomerBalanceRow, TransactionRow } from "../../src/types/database.types";
+import { test, expect } from "../src/fixtures/bdd.fixture";
+import { Database } from "../src/utils/database";
+import { getRuntimeData } from "../src/utils/runtimeData";
+import type { CustomerBalanceRow, TransactionRow } from "../src/types/database.types";
 
 const { Given, When, Then } = createBdd(test, { tags: "@bdd04" });
 

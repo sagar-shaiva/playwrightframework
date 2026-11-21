@@ -1,6 +1,6 @@
 import { createBdd } from "playwright-bdd";
-import { test } from "../../src/fixtures/bdd.fixture";
-import type { CustomerPage } from "../../src/pages/CustomerPage";
+import { test } from "../src/fixtures/bdd.fixture";
+import type { CustomerPage } from "../src/pages/CustomerPage";
 
 const { Given, When, Then } = createBdd(test, { tags: "@bdd08" });
 let secondSession: CustomerPage;

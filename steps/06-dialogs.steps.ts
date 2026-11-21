@@ -1,5 +1,5 @@
 import { createBdd } from "playwright-bdd";
-import { test } from "../../src/fixtures/bdd.fixture";
+import { test } from "../src/fixtures/bdd.fixture";
 
 const { Given, When, Then } = createBdd(test, { tags: "@bdd06" });
 

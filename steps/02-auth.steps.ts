@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { createBdd } from "playwright-bdd";
-import { test } from "../../src/fixtures/bdd.fixture";
-import { getAuthFile } from "../../config/env.config";
+import { test } from "../src/fixtures/bdd.fixture";
+import { getAuthFile } from "../config/env.config";
 
 const { Given, When, Then } = createBdd(test, { tags: "@bdd02" });
 
