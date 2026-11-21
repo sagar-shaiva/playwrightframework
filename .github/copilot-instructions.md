@@ -93,6 +93,7 @@ The `dialogs` fixture accepts every browser dialog and records the message. Test
 
 - Credentials never go in committed files. Local: `env/.env.<env>.local`. GitHub: Settings > Environments (`training`, `qa`, `uat`), each with a secret `DB_PASSWORD` and variables `DB_SERVER`, `DB_NAME`, `DB_USER`.
 - The workflow is manual (`workflow_dispatch`) with inputs framework (pom|bdd), environment, country, database_checks; it runs the same npm script as a local run and uploads `reports/`.
+- The job runs in `mcr.microsoft.com/playwright:v<version>-noble` so browsers need no install; the tag must equal the `@playwright/test` version, so update both together.
 
 ## Reliability lessons
 
